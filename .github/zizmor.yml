@@ -1,0 +1,8 @@
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        actions/*: ref-pin
+        softprops/*: ref-pin
+        OpenOrienteering/Mapper-vcpkg/.github/workflows/vcpkg.yml: any
+        dg0yt/Mapper-vcpkg/.github/workflows/vcpkg.yml: any
