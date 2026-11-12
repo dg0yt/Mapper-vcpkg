@@ -74,7 +74,6 @@ jobs:
         run: |
           mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
           mkdir -p "$VCPKG_DOWNLOADS"
-          cd ci/vcpkg
           CONFIGURATION=$( \
             find vcpkg.json vcpkg-configuration.json overlay-ports overlay-triplets -type f -exec sha1sum '{}' ';' | \
             sed -e '/overlay-triplets[/]/ {' -e "/[/]$HOST_TRIPLET[.]cmake/ p" -e "/[/]$TARGET_TRIPLET[.]cmake/ p" -e 'd' -e '}' |
