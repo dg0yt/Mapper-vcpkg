@@ -175,7 +175,6 @@ jobs:
         if: steps.restore-export.outputs.cache-hit == ''
         env: *vcpkg_env
         run: |
-          cd ci/vcpkg
           vcpkg install --host-triplet="$HOST_TRIPLET" --triplet="$TARGET_TRIPLET" --x-install-root='${{ github.workspace }}/vcpkg_installed'
 
       - name: Save vcpkg artifacts and tools to cache
