@@ -191,7 +191,6 @@ jobs:
         if: steps.restore-export.outputs.cache-hit == ''
         env: *vcpkg_env
         run: |
-          cd ci/vcpkg
           case "$TARGET_TRIPLET" in
           *windows*)
             ;;
