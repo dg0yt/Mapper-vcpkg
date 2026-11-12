@@ -33,7 +33,7 @@ jobs:
       runner: ubuntu-24.04
       target-triplet: arm64-android-dynamic-release
       host-triplet: x64-linux-dynamic-release
-      restore_export: ${{ inputs.restore_export != 'false' }}
+      restore_export: ${{ inputs.restore_export != false }}
       cmake-args: >-
         -DANDROID_ABI=arm64-v8a
         -DANDROID_MIN_SDK_VERSION=24
@@ -51,7 +51,7 @@ jobs:
       runner: macos-15
       target-triplet: arm64-osx-dynamic-release
       host-triplet: arm64-osx-dynamic-release
-      restore_export: ${{ inputs.restore_export != 'false' }}
+      restore_export: ${{ inputs.restore_export != false }}
       cmake-args: >-
         -DMapper_SYSTEM_NAME=macOS-arm64
     secrets:
@@ -64,7 +64,7 @@ jobs:
       runner: ubuntu-24.04
       target-triplet: x64-android-dynamic-release
       host-triplet: x64-linux-dynamic-release
-      restore_export: ${{ inputs.restore_export != 'false' }}
+      restore_export: ${{ inputs.restore_export != false }}
       cmake-args: >-
         -DANDROID_ABI=x86_64
         -DANDROID_MIN_SDK_VERSION=24
@@ -82,7 +82,7 @@ jobs:
       runner: ubuntu-24.04
       target-triplet: x64-linux-dynamic-release
       host-triplet: x64-linux-dynamic-release
-      restore_export: ${{ inputs.restore_export != 'false' }}
+      restore_export: ${{ inputs.restore_export != false }}
     secrets:
       ARTIFACTS_KEY: ${{ secrets.ARTIFACTS_KEY }}
 
@@ -93,7 +93,7 @@ jobs:
       runner: ubuntu-24.04
       target-triplet: x64-linux-dynamic-release
       host-triplet: x64-linux-dynamic-release
-      restore_export: ${{ inputs.restore_export != 'false' }}
+      restore_export: ${{ inputs.restore_export != false }}
       cmake-args: >+
         -DCMAKE_BUILD_TYPE=Debug
     secrets:
@@ -106,7 +106,7 @@ jobs:
       runner: macos-15-intel
       target-triplet: x64-osx-dynamic-release
       host-triplet: x64-osx-dynamic-release
-      restore_export: ${{ inputs.restore_export != 'false' }}
+      restore_export: ${{ inputs.restore_export != false }}
       cmake-args: 
         -DMapper_SYSTEM_NAME=macOS-x64
     secrets:
@@ -119,7 +119,7 @@ jobs:
       runner: windows-2025-vs2026
       target-triplet: x64-windows-dynamic-release
       host-triplet: x64-windows-dynamic-release
-      restore_export: ${{ inputs.restore_export != 'false' }}
+      restore_export: ${{ inputs.restore_export != false }}
       cmake-args: 
         -DVCPKG_CRT_LINKAGE=dynamic
         -DCMAKE_C_COMPILER=cl
