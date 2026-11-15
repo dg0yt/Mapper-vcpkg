@@ -165,11 +165,11 @@ jobs:
           path: |
             ${{ github.workspace }}/cache
             !${{ github.workspace }}/cache/downloads/tools
-          key: vcpkg-artifacts_${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
+          key: vcpkg-cache_${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
           restore-keys: |
-            vcpkg-artifacts_${{ steps.vcpkg-configuration.outputs.key }}_
-            vcpkg-artifacts_${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_
-            vcpkg-artifacts_${{ inputs.host-triplet }}_
+            vcpkg-cache_${{ steps.vcpkg-configuration.outputs.key }}_
+            vcpkg-cache_${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_
+            vcpkg-cache_${{ inputs.host-triplet }}_
             vcpkg-artifacts-${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_${{ steps.vcpkg-configuration.outputs.hash }}-
             vcpkg-artifacts-${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_
             vcpkg-artifacts-${{ inputs.host-triplet }}_
@@ -227,7 +227,7 @@ jobs:
           path: |
             ${{ github.workspace }}/cache
             !${{ github.workspace }}/cache/downloads/tools
-          key: vcpkg-artifacts-${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
+          key: vcpkg-cache_${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
 
       - name: vcpkg export
         if: steps.restore-export.outputs.cache-hit == ''

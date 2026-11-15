@@ -156,9 +156,9 @@ jobs:
       with:
         path: |
           ${{ github.workspace }}/cache/downloads
-        key: vcpkg-artifacts_${{ needs.x64-linux.outputs.key }}_${{ github.run_id }}
+        key: vcpkg-cache_${{ needs.x64-linux.outputs.key }}_${{ github.run_id }}
         restore-keys: |
-          vcpkg-artifacts_${{ needs.x64-linux.outputs.key }}
+          vcpkg-cache_${{ needs.x64-linux.outputs.key }}
           vcpkg-artifacts-${{ needs.x64-linux.outputs.key }}
         fail-on-cache-miss: true
     - name: run script
