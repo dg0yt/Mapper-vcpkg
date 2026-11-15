@@ -39,7 +39,7 @@ env:
 jobs:
   vcpkg:
     outputs:
-      key: ${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
+      key: ${{ steps.vcpkg-configuration.outputs.key }}
       label: ${{ steps.workflow-configuration.outputs.WORKFLOW_LABEL }}
 
     strategy:

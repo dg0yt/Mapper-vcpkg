@@ -138,18 +138,6 @@ jobs:
     secrets:
       ARTIFACTS_KEY: ${{ secrets.ARTIFACTS_KEY }}
 
-  diagnostics:
-    name: Dump build outputs
-    needs: [ x64-linux ]
-    runs-on: ubuntu-24.04
-    env:
-      KEY: ${{ needs.x64-linux.outputs.key }}
-      LABEL: ${{ needs.x64-linux.outputs.label }}
-    steps:
-    - run: |
-        echo "key := $KEY"
-        echo "label := $LABEL"
-
   upload-assets:
     name: Upload source assets
     needs: [ x64-linux ]
@@ -168,7 +156,10 @@ jobs:
       with:
         path: |
           ${{ github.workspace }}/cache/downloads
-        key: vcpkg-artifacts_${{ needs.x64-linux.outputs.key }}
+        key: vcpkg-artifacts_${{ needs.x64-linux.outputs.key }}_${{ github.run_id }}
+        restore-keys: |
+          vcpkg-artifacts_${{ needs.x64-linux.outputs.key }}
+          vcpkg-artifacts-${{ needs.x64-linux.outputs.key }}
         fail-on-cache-miss: true
     - name: run script
       env:
@@ -194,17 +185,17 @@ jobs:
       uses: actions/cache/restore@v5
       with:
         path: build/OpenOrienteering-Mapper-*
-        key: mapper-package_${{ needs.arm64-macos.outputs.key }}
+        key: mapper-package_${{ needs.arm64-macos.outputs.key }}_${{ github.run_id }}
         fail-on-cache-miss: true
     - name: Restore x64-linux packages
       uses: actions/cache/restore@v5
       with:
         path: build/OpenOrienteering-Mapper-*
-        key: mapper-package_${{ needs.x64-linux.outputs.key }}
+        key: mapper-package_${{ needs.x64-linux.outputs.key }}_${{ github.run_id }}
         fail-on-cache-miss: true
     - name: run script
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         gh release create --draft my-release || true
-        gh release upload my-release ${{ github.workspace }}/cache/downloads/*
+        gh release upload my-release ${{ github.workspace }}/build/OpenOrienteering-Mapper-*
