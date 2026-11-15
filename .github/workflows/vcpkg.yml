@@ -47,7 +47,31 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install direct system dependencies
+      - name: Determine workflow configuration
+        id: workflow-configuration
+        run: |
+          if test -f .github/WORKFLOW_LABEL && grep -q "vcpkg" .github/WORKFLOW_LABEL
+          then
+            echo WORKFLOW_LABEL=vcpkg
+            echo WORKFLOW_VCPKG_DIR=
+            echo WORKFLOW_MAPPER_DIR=Mapper
+          else
+            echo WORKFLOW_LABEL=mapper
+            echo WORKFLOW_VCPKG_DIR=Mapper-vcpkg
+            echo WORKFLOW_MAPPER_DIR=
+          fi |
+            tee -a "$GITHUB_ENV" |
+            tee -a "$GITHUB_OUTPUT"
+
+      - name: git checkout Mapper-vcpkg
+        if: ${{ steps.workflow-configuration.outputs.WORKFLOW_LABEL != 'vcpkg' }}
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          repository: dg0yt/Mapper-vcpkg
+          path: ${{ steps.workflow-configuration.outputs.WORKFLOW_VCPKG_DIR }}
+
+      - name: General build system configuration
         run: |
           case "$RUNNER" in
           macos*)
@@ -63,6 +87,14 @@ jobs:
           windows*)
             choco install --no-progress nsis
             echo 'C:\Program Files (x86)\NSIS' >> "$GITHUB_PATH"
+            case "$HOST_TRIPLET,$TARGET_TRIPLET" in
+            x64-*,x64-*)
+              echo 'CALL_VCVARSALL=call "C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" ' x64 >> "$GITHUB_ENV"
+              ;;
+            *)
+              echo "Unsupported triplet combination: $HOST_TRIPLET,$TARGET_TRIPLET"
+              exit 1
+            esac
             ;;
           esac
 
@@ -74,6 +106,8 @@ jobs:
         run: |
           mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
           mkdir -p "$VCPKG_DOWNLOADS"
+
+          test -z "$WORKFLOW_VCPKG_DIR" || cd "$WORKFLOW_VCPKG_DIR"
           CONFIGURATION=$( \
             find vcpkg.json vcpkg-configuration.json overlay-ports overlay-triplets -type f -exec sha1sum '{}' ';' | \
             sed -e '/overlay-triplets[/]/ {' -e "/[/]$HOST_TRIPLET[.]cmake/ p" -e "/[/]$TARGET_TRIPLET[.]cmake/ p" -e 'd' -e '}' |
@@ -83,6 +117,7 @@ jobs:
             sha1sum | \
             (read HASH FILE; echo hash=$HASH) | \
             tee -a "$GITHUB_OUTPUT"
+
           case "$TARGET_TRIPLET" in
           *-android*)
             TOOLCHAIN_FILE="$GITHUB_WORKSPACE/vcpkg-export/scripts/toolchains/android.cmake"
@@ -100,16 +135,7 @@ jobs:
             TOOLCHAIN_FILE="unknown-vcpkg-toolchain-file"
             ;;
           esac
-          echo "TOOLCHAIN_FILE=${TOOLCHAIN_FILE}" >> "$GITHUB_ENV"
-          case "$HOST_TRIPLET,$TARGET_TRIPLET" in
-          x64-*,x64-*)
-            VCVARS_ARCHITECTURE=x64
-            ;;
-          *)
-            VCVARS_ARCHITECTURE=unknown
-            ;;
-          esac
-          echo 'CALL_VCVARSALL=call "C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" ' "$VCVARS_ARCHITECTURE" >> "$GITHUB_ENV"
+          echo "TOOLCHAIN_FILE=${TOOLCHAIN_FILE}" | tee -a "$GITHUB_ENV"
 
       - name: Restore vcpkg export
         id: restore-export
@@ -175,6 +201,7 @@ jobs:
         if: steps.restore-export.outputs.cache-hit == ''
         env: *vcpkg_env
         run: |
+          test -z "$WORKFLOW_VCPKG_DIR" || cd "$WORKFLOW_VCPKG_DIR"
           vcpkg install --host-triplet="$HOST_TRIPLET" --triplet="$TARGET_TRIPLET" --x-install-root='${{ github.workspace }}/vcpkg_installed'
 
       - name: Save vcpkg artifacts and tools to cache
@@ -199,6 +226,7 @@ jobs:
             find $GITHUB_WORKSPACE/vcpkg_installed/*/tools -type f -executable -exec strip -S '{}' ';' || true
             ;;
           esac
+          test -z "$WORKFLOW_VCPKG_DIR" || cd "$WORKFLOW_VCPKG_DIR"
           vcpkg export --raw --output-dir=$GITHUB_WORKSPACE --x-install-root=$GITHUB_WORKSPACE/vcpkg_installed
           cd "$GITHUB_WORKSPACE"
           mv vcpkg-export-* vcpkg-export
@@ -212,14 +240,23 @@ jobs:
           path: ${{ github.workspace }}/vcpkg-export
           key: vcpkg-export-${{ env.EXPORT_EPOCH }}-${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_${{ steps.vcpkg-configuration.outputs.hash }}-${{ github.run_id }}
 
-      - name: Configure
+      - name: git checkout Mapper
+        if: ${{ steps.workflow-configuration.outputs.WORKFLOW_LABEL != 'mapper' }}
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          repository: dg0yt/Mapper
+          path: ${{ steps.workflow-configuration.outputs.WORKFLOW_MAPPER_DIR }}
+
+
+      - name: Configure Mapper
         env:
           CMAKE_ARGS: ${{ inputs.cmake-args }}
         run: |
           mkdir build
           ${{ case(contains(inputs.target-triplet, 'windows'), 'cat << : | cmd /D /E:ON /V:OFF /K echo off', '') }}
           ${{ case(contains(inputs.target-triplet, 'windows'), '$CALL_VCVARSALL', '') }}
-          cmake -S . -B build \
+          cmake -S "${WORKFLOW_MAPPER_DIR:-.}" -B build \
             -G Ninja \
             -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$TOOLCHAIN_FILE \
             -DVCPKG_TARGET_TRIPLET=$TARGET_TRIPLET \
@@ -237,7 +274,7 @@ jobs:
             || exit 1
           :
 
-      - name: Build
+      - name: Build Mapper
         run: |
           ${{ case(contains(inputs.target-triplet, 'windows'), 'cat << : | cmd /D /E:ON /V:OFF /K echo off', '') }}
           ${{ case(contains(inputs.target-triplet, 'windows'), '$CALL_VCVARSALL', '') }}
@@ -245,7 +282,7 @@ jobs:
             || exit 1
           :
 
-      - name: Test
+      - name: Run Mapper tests
         env:
           CTEST_OUTPUT_ON_FAILURE: 1
           DYLD_LIBRARY_PATH: ${{ github.workspace }}/vcpkg-export/installed/${{ inputs.target-triplet }}/lib
@@ -266,7 +303,7 @@ jobs:
             || exit 1
           :
 
-      - name: Package
+      - name: Package Mapper
         id: packaging
         env:
           ARTIFACTS_KEY: ${{ secrets.ARTIFACTS_KEY }}
@@ -277,30 +314,23 @@ jobs:
             || exit 1
           :
           if test "$UPLOAD_ARTIFACTS" == "1"; then
-            ARTIFACT_NAME=artifact
             echo "$ARTIFACTS_KEY" > artifacts-key.asc
+            artifact=single
+            rm -Rf build/OpenOrienteering-Mapper-*.gpg
             for ARTIFACT in build/OpenOrienteering-Mapper-* ; do
               gpg --batch --yes --no-tty --trust-model always --recipient-file artifacts-key.asc --encrypt "$ARTIFACT"
-              echo ${ARTIFACT_NAME}=${ARTIFACT}.gpg | tee -a "$GITHUB_OUTPUT"
-              ARTIFACT_NAME=${ARTIFACT_NAME}_2
+              echo "artifact=$artifact" >> "$GITHUB_OUTPUT"
+              artifact=multi
             done
             rm artifacts-key.asc
           fi
 
-      - name: Upload
+      - name: Upload workflow artifacts
         if: steps.packaging.outputs.artifact != ''
         uses: actions/upload-artifact@v7
         with:
-          path: ${{ steps.packaging.outputs.artifact }}
-          archive: false
-          compression-level: 0
-          retention-days: 7
-
-      - name: Upload (2)
-        if: steps.packaging.outputs.artifact_2 != ''
-        uses: actions/upload-artifact@v7
-        with:
-          path: ${{ steps.packaging.outputs.artifact_2 }}
-          archive: false
+          path: build/OpenOrienteering-Mapper-*.gpg
+          archive: ${{ steps.packaging.outputs.artifact == 'multi' }}
+          name: ${{ case(steps.packaging.outputs.artifact == 'multi', inputs.target-triplet, '') }}
           compression-level: 0
           retention-days: 7
