@@ -18,6 +18,13 @@ on:
       cmake-args:
         type: string
         default: ""
+    outputs:
+      hash:
+        description: "Mapper-vcpkg configuration hash"
+        value: ${{ jobs.vcpkg.vcpkg-configuration.hash }}
+      label:
+        description: "Mapper-vcpkg workflow label"
+        value: ${{ jobs.vcpkg.workflow-configuration.WORKFLOW_LABEL }}
     secrets:
       ARTIFACTS_KEY:
         required: false
@@ -334,3 +341,26 @@ jobs:
           name: ${{ case(steps.packaging.outputs.artifact == 'multi', inputs.target-triplet, '') }}
           compression-level: 0
           retention-days: 7
+
+  upload-packages:
+    name: Upload Mapper packages to release
+    needs: vcpkg
+    if: needs.vcpkg.outputs.label == 'mapper'
+    runs-on: ubuntu-24.04
+    environment: Release
+    permissions:
+      contents: write
+    steps:
+    - name: checkout
+      uses: actions/checkout@v6.1.0
+    - name: Restore packages
+      uses: actions/download-artifact@v8
+      with:
+        path: restored
+        merge-multiple: true
+    - name: run script
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      run: |
+        gh release create --draft my-release || true
+        gh release upload my-release ${{ github.workspace }}/cache/downloads/*

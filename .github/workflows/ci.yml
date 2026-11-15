@@ -3,12 +3,22 @@ name: CI
 on:
   push:
   pull_request:
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
     inputs:
       restore_export:
         description: 'Restore vcpkg export from cache'
+        type: boolean
+        default: true
+      target_pattern:
+        description: 'Build jobs matching this pattern'
+        type: string
+        default: "^"
+      upload-assets:
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      restore_export:
         type: boolean
         default: true
       target_pattern:
@@ -126,3 +136,29 @@ jobs:
         -DCMAKE_CXX_COMPILER=cl
     secrets:
       ARTIFACTS_KEY: ${{ secrets.ARTIFACTS_KEY }}
+
+  upload-assets:
+    name: Upload assets to release
+    needs: [ x64-linux ]
+    if: inputs.upload-assets && needs.x64-linux.outputs.label == 'vcpkg'
+    runs-on: ubuntu-24.04
+    environment: Release
+    permissions:
+      contents: write
+    steps:
+    - name: checkout
+      uses: actions/checkout@v6.1.0
+    - name: Restore assets
+      uses: actions/cache/restore@v5
+      with:
+        path: |
+          ${{ github.workspace }}/cache/downloads
+        key: vcpkg-artifacts-x64-linux-dynamic-release_x64-linux-dynamic-release_${{ needs.x64-linux.outputs.hash }}-${{ github.run_id }}
+        restore-keys: |
+          vcpkg-artifacts-x64-linux-dynamic-release_x64-linux-dynamic-release_${{ needs.x64-linux.outputs.hash }}-
+    - name: run script
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      run: |
+        gh release create --draft my-release || true
+        gh release upload my-release ${{ github.workspace }}/cache/downloads/*
