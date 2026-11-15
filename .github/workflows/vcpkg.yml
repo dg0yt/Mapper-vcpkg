@@ -20,8 +20,8 @@ on:
         default: ""
     outputs:
       hash:
-        description: "Configuration hash"
-        value: ${{ jobs.vcpkg.vcpkg.outputs.hash }}
+        description: "vcpkg configuration hash"
+        value: ${{ jobs.vcpkg.outputs.hash }}
       label:
         description: "Workflow label"
         value: ${{ jobs.vcpkg.outputs.label }}
@@ -30,9 +30,7 @@ on:
         required: false
 
 env:
-  EXPORT_EPOCH: 0
   RUNNER: ${{ inputs.runner }}
-  UPLOAD_ARTIFACTS: ${{ case(secrets.ARTIFACTS_KEY == '', 0, 1) }}
   HOST_TRIPLET: ${{ inputs.host-triplet }}
   TARGET_TRIPLET: ${{ inputs.target-triplet }}
   VERBOSE: 1
@@ -154,7 +152,7 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: ${{ github.workspace }}/vcpkg-export
-          key: vcpkg-export-${{ env.EXPORT_EPOCH }}-${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_${{ steps.vcpkg-configuration.outputs.hash }}
+          key: vcpkg-export-${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_${{ steps.vcpkg-configuration.outputs.hash }}
 
       - name: Restore vcpkg artifacts and tools
         if: steps.restore-export.outputs.cache-hit == ''
@@ -249,7 +247,7 @@ jobs:
         uses: actions/cache/save@v5
         with:
           path: ${{ github.workspace }}/vcpkg-export
-          key: vcpkg-export-${{ env.EXPORT_EPOCH }}-${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_${{ steps.vcpkg-configuration.outputs.hash }}-${{ github.run_id }}
+          key: vcpkg-export-${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_${{ steps.vcpkg-configuration.outputs.hash }}-${{ github.run_id }}
 
       - name: git checkout Mapper
         if: ${{ steps.workflow-configuration.outputs.WORKFLOW_LABEL != 'mapper' }}
@@ -314,34 +312,40 @@ jobs:
             || exit 1
           :
 
-      - name: Package Mapper
-        id: packaging
-        env:
-          ARTIFACTS_KEY: ${{ secrets.ARTIFACTS_KEY }}
+      # Separate step because the DMG unmount is unreliable
+      - name: Build Mapper package
         run: |
           ${{ case(contains(inputs.target-triplet, 'windows'), 'cat << : | cmd /D /E:ON /V:OFF /K echo off', '') }}
           ${{ case(contains(inputs.target-triplet, 'windows'), '$CALL_VCVARSALL', '') }}
           cmake --build build --target package \
             || exit 1
           :
-          if test "$UPLOAD_ARTIFACTS" == "1"; then
-            echo "$ARTIFACTS_KEY" > artifacts-key.asc
-            artifact=single
-            rm -Rf build/OpenOrienteering-Mapper-*.gpg
-            for ARTIFACT in build/OpenOrienteering-Mapper-* ; do
-              gpg --batch --yes --no-tty --trust-model always --recipient-file artifacts-key.asc --encrypt "$ARTIFACT"
-              echo "artifact=$artifact" >> "$GITHUB_OUTPUT"
-              artifact=multi
-            done
-            rm artifacts-key.asc
-          fi
+
+      - name: Save Mapper packages to cache
+        #if: ${{ steps.workflow-configuration.outputs.WORKFLOW_LABEL 0= 'mapper' }}
+        uses: actions/cache/save@v5
+        with:
+          path: build/OpenOrienteering-Mapper-*
+          key: mapper-package_${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_${{ steps.vcpkg-configuration.outputs.hash }}-${{ github.run_id }}
+
+      - name: Prepare private artifacts
+        id: prepare-artifacts
+        if: ${{ case(secrets.ARTIFACTS_KEY == '', 0, 1) }}
+        env:
+          ARTIFACTS_KEY: ${{ secrets.ARTIFACTS_KEY }}
+        run: |
+          echo "$ARTIFACTS_KEY" > artifacts-key.asc
+          rm -Rf build/OpenOrienteering-Mapper-*.gpg
+          for ARTIFACT in build/OpenOrienteering-Mapper-* ; do
+            gpg --batch --yes --no-tty --trust-model always --recipient-file artifacts-key.asc --encrypt "$ARTIFACT"
+            echo "have_artifacts=true" >> "$GITHUB_OUTPUT"
+          done
 
       - name: Upload workflow artifacts
-        if: steps.packaging.outputs.artifact != ''
+        if: steps.prepare-artifacts.outputs.have_artifacts
         uses: actions/upload-artifact@v7
         with:
+          name: ${{ inputs.target-triplet }}
           path: build/OpenOrienteering-Mapper-*.gpg
-          archive: ${{ steps.packaging.outputs.artifact == 'multi' }}
-          name: ${{ case(steps.packaging.outputs.artifact == 'multi', inputs.target-triplet, '') }}
           compression-level: 0
           retention-days: 7
