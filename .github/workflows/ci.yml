@@ -137,6 +137,14 @@ jobs:
     secrets:
       ARTIFACTS_KEY: ${{ secrets.ARTIFACTS_KEY }}
 
+  diagnostics:
+    name: Dump build outputs
+    needs: [ x64-linux ]
+    steps:
+      run: |
+        echo "label := ${{ needs.x64-linux.outputs.label }}"
+        echo "hash := ${{ needs.x64-linux.outputs.hash }}"
+
   upload-assets:
     name: Upload assets to release
     needs: [ x64-linux ]
@@ -148,6 +156,8 @@ jobs:
     steps:
     - name: checkout
       uses: actions/checkout@v6.1.0
+      with:
+        persist-credentials: false
     - name: Restore assets
       uses: actions/cache/restore@v5
       with:
@@ -174,6 +184,8 @@ jobs:
     steps:
     - name: checkout
       uses: actions/checkout@v6.1.0
+      with:
+        persist-credentials: false
     - name: Restore packages
       uses: actions/download-artifact@v8
       with:
