@@ -25,9 +25,6 @@ on:
       label:
         description: "Workflow label"
         value: ${{ jobs.vcpkg.outputs.label }}
-      success:
-        description: "Canary"
-        value: true
     secrets:
       ARTIFACTS_KEY:
         required: false
@@ -43,8 +40,8 @@ env:
 jobs:
   vcpkg:
     outputs:
-      hash: ${{ steps.vcpkg-configuration.hash }}
-      label: ${{ steps.workflow-configuration.WORKFLOW_LABEL }}
+      hash: ${{ steps.vcpkg-configuration.outputs.hash }}
+      label: ${{ steps.workflow-configuration.outputs.WORKFLOW_LABEL }}
 
     strategy:
       fail-fast: false
