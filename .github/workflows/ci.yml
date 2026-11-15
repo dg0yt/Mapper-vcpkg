@@ -142,7 +142,7 @@ jobs:
     needs: [ x64-linux ]
     runs-on: ubuntu-24.04
     steps:
-      run: |
+    - run: |
         echo "label := ${{ needs.x64-linux.outputs.label }}"
         echo "hash := ${{ needs.x64-linux.outputs.hash }}"
 
