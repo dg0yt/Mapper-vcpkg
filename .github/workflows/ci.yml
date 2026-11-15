@@ -151,9 +151,9 @@ jobs:
         echo "label := $LABEL"
 
   upload-assets:
-    name: Upload assets to release
+    name: Upload source assets
     needs: [ x64-linux ]
-    #if: needs.x64-linux.outputs.label == 'vcpkg'
+    if: ${{ needs.x64-linux.outputs.label == 'vcpkg' }}
     runs-on: ubuntu-24.04
     environment: Release
     permissions:
@@ -172,15 +172,15 @@ jobs:
         fail-on-cache-miss: true
     - name: run script
       env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         gh release create --draft my-release || true
         gh release upload my-release ${{ github.workspace }}/cache/downloads/*
 
   upload-packages:
-    name: Upload Mapper packages to release
-    needs: [ x64-linux ]
-    #if: needs.x64-linux.outputs.label == 'mapper'
+    name: Upload Mapper packages
+    needs: [ arm64-osx, x64-linux ]
+    if: ${{ needs.x64-linux.outputs.label == 'mapper' || needs.x64-linux.outputs.label == 'vcpkg' }}
     runs-on: ubuntu-24.04
     environment: Release
     permissions:
@@ -190,6 +190,12 @@ jobs:
       uses: actions/checkout@v6.1.0
       with:
         persist-credentials: false
+        - name: Restore packages
+          uses: actions/cache/restore@v5
+          with:
+            path: build/OpenOrienteering-Mapper-*
+            key: mapper-package_${{ needs.arm64-osx.outputs.key }}
+            fail-on-cache-miss: true
     - name: Restore packages
       uses: actions/cache/restore@v5
       with:
@@ -198,7 +204,7 @@ jobs:
         fail-on-cache-miss: true
     - name: run script
       env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         gh release create --draft my-release || true
         gh release upload my-release ${{ github.workspace }}/cache/downloads/*
