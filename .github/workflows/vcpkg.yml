@@ -19,9 +19,9 @@ on:
         type: string
         default: ""
     outputs:
-      hash:
-        description: "vcpkg configuration hash"
-        value: ${{ jobs.vcpkg.outputs.hash }}
+      key:
+        description: "Cache key"
+        value: ${{ jobs.vcpkg.outputs.key }}
       label:
         description: "Workflow label"
         value: ${{ jobs.vcpkg.outputs.label }}
@@ -39,7 +39,7 @@ env:
 jobs:
   vcpkg:
     outputs:
-      hash: ${{ steps.vcpkg-configuration.outputs.hash }}
+      key: ${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
       label: ${{ steps.workflow-configuration.outputs.WORKFLOW_LABEL }}
 
     strategy:
@@ -125,7 +125,7 @@ jobs:
           echo "$CONFIGURATION"
           echo "$CONFIGURATION" |
             sha1sum | \
-            (read HASH FILE; echo hash=$HASH) | \
+            (read HASH FILE; echo hash=$HASH; echo key="${HOST_TRIPLET}_${TARGET_TRIPLET}_${HASH}") | \
             tee -a "$GITHUB_OUTPUT"
 
           case "$TARGET_TRIPLET" in
@@ -153,7 +153,10 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: ${{ github.workspace }}/vcpkg-export
-          key: vcpkg-export-${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_${{ steps.vcpkg-configuration.outputs.hash }}
+          key: vcpkg-export_${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
+          restore-keys: |
+            vcpkg-export_${{ steps.vcpkg-configuration.outputs.key }}
+            vcpkg-export-${{ steps.vcpkg-configuration.outputs.key }}
 
       - name: Restore vcpkg artifacts and tools
         if: steps.restore-export.outputs.cache-hit == ''
@@ -162,8 +165,11 @@ jobs:
           path: |
             ${{ github.workspace }}/cache
             !${{ github.workspace }}/cache/downloads/tools
-          key: vcpkg-artifacts-${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_${{ steps.vcpkg-configuration.outputs.hash }}-${{ github.run_id }}
+          key: vcpkg-artifacts_${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
           restore-keys: |
+            vcpkg-artifacts_${{ steps.vcpkg-configuration.outputs.key }}_
+            vcpkg-artifacts_${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_
+            vcpkg-artifacts_${{ inputs.host-triplet }}_
             vcpkg-artifacts-${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_${{ steps.vcpkg-configuration.outputs.hash }}-
             vcpkg-artifacts-${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_
             vcpkg-artifacts-${{ inputs.host-triplet }}_
@@ -221,7 +227,7 @@ jobs:
           path: |
             ${{ github.workspace }}/cache
             !${{ github.workspace }}/cache/downloads/tools
-          key: vcpkg-artifacts-${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_${{ steps.vcpkg-configuration.outputs.hash }}-${{ github.run_id }}
+          key: vcpkg-artifacts-${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
 
       - name: vcpkg export
         if: steps.restore-export.outputs.cache-hit == ''
@@ -248,7 +254,7 @@ jobs:
         uses: actions/cache/save@v5
         with:
           path: ${{ github.workspace }}/vcpkg-export
-          key: vcpkg-export-${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_${{ steps.vcpkg-configuration.outputs.hash }}-${{ github.run_id }}
+          key: vcpkg-export-${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
 
       - name: git checkout Mapper
         if: ${{ steps.workflow-configuration.outputs.WORKFLOW_LABEL != 'mapper' }}
@@ -327,7 +333,7 @@ jobs:
         uses: actions/cache/save@v5
         with:
           path: build/OpenOrienteering-Mapper-*
-          key: mapper-package_${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_${{ steps.vcpkg-configuration.outputs.hash }}-${{ github.run_id }}
+          key: mapper-package_${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
 
       - name: Prepare private artifacts
         id: prepare-artifacts
@@ -346,7 +352,7 @@ jobs:
         if: steps.prepare-artifacts.outputs.have_artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ inputs.target-triplet }}
+          name: ${{ steps.vcpkg-configuration.outputs.key }}
           path: build/OpenOrienteering-Mapper-*.gpg
           compression-level: 0
           retention-days: 7

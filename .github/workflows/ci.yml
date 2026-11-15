@@ -143,11 +143,11 @@ jobs:
     needs: [ x64-linux ]
     runs-on: ubuntu-24.04
     env:
-      HASH: ${{ needs.x64-linux.outputs.hash }}
+      KEY: ${{ needs.x64-linux.outputs.key }}
       LABEL: ${{ needs.x64-linux.outputs.label }}
     steps:
     - run: |
-        echo "hash := $HASH"
+        echo "key := $KEY"
         echo "label := $LABEL"
 
   upload-assets:
@@ -168,9 +168,8 @@ jobs:
       with:
         path: |
           ${{ github.workspace }}/cache/downloads
-        key: vcpkg-artifacts-x64-linux-dynamic-release_x64-linux-dynamic-release_${{ needs.x64-linux.outputs.hash }}-${{ github.run_id }}
-        restore-keys: |
-          vcpkg-artifacts-x64-linux-dynamic-release_x64-linux-dynamic-release_${{ needs.x64-linux.outputs.hash }}-
+        key: vcpkg-artifacts_${{ needs.x64-linux.outputs.key }}
+        fail-on-cache-miss: true
     - name: run script
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -195,7 +194,8 @@ jobs:
       uses: actions/cache/restore@v5
       with:
         path: build/OpenOrienteering-Mapper-*
-        key: mapper-package_x64-linux-dynamic-release_x64-linux-dynamic-release_${{ steps.vcpkg-configuration.outputs.hash }}-${{ github.run_id }}
+        key: mapper-package_${{ needs.x64-linux.outputs.key }}
+        fail-on-cache-miss: true
     - name: run script
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
