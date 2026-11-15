@@ -141,10 +141,15 @@ jobs:
     name: Dump build outputs
     needs: [ x64-linux ]
     runs-on: ubuntu-24.04
+    env:
+      HASH: ${{ needs.x64-linux.outputs.hash }}
+      LABEL: ${{ needs.x64-linux.outputs.label }}
+      SUCCESS: ${{ needs.x64-linux.outputs.success }}
     steps:
     - run: |
-        echo "label := ${{ needs.x64-linux.outputs.label }}"
-        echo "hash := ${{ needs.x64-linux.outputs.hash }}"
+        echo "hash := $HASH"
+        echo "label := $LABEL"
+        echo "success := $SUCCESS"
 
   upload-assets:
     name: Upload assets to release

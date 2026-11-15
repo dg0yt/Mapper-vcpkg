@@ -20,11 +20,14 @@ on:
         default: ""
     outputs:
       hash:
-        description: "Mapper-vcpkg configuration hash"
-        value: ${{ jobs.vcpkg.vcpkg-configuration.hash }}
+        description: "Configuration hash"
+        value: ${{ jobs.vcpkg.vcpkg.outputs.hash }}
       label:
-        description: "Mapper-vcpkg workflow label"
-        value: ${{ jobs.vcpkg.workflow-configuration.WORKFLOW_LABEL }}
+        description: "Workflow label"
+        value: ${{ jobs.vcpkg.outputs.label }}
+      success:
+        description: "Canary"
+        value: true
     secrets:
       ARTIFACTS_KEY:
         required: false
@@ -39,6 +42,14 @@ env:
 
 jobs:
   vcpkg:
+    outputs:
+      hash:
+        description: "Configuration hash"
+        value: ${{ steps.vcpkg-configuration.hash }}
+      label:
+        description: "Workflow label"
+        value: ${{ steps.workflow-configuration.WORKFLOW_LABEL }}
+
     strategy:
       fail-fast: false
 
