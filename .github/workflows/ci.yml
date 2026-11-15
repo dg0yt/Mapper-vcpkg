@@ -140,7 +140,7 @@ jobs:
 
   upload-assets:
     name: Upload source assets
-    needs: [ x64-linux ]
+    needs: [ arm64-android, arm64-macos, x64-android, x64-macos, x64-linux, x64-windows ]
     if: ${{ needs.x64-linux.outputs.label == 'vcpkg' }}
     runs-on: ubuntu-24.04
     environment: Release
@@ -151,7 +151,28 @@ jobs:
       uses: actions/checkout@v6.1.0
       with:
         persist-credentials: false
-    - name: Restore assets
+    -
+    - name: Restore arm64-android assets
+      uses: actions/cache/restore@v5
+      with:
+        path: |
+          ${{ github.workspace }}/cache/downloads
+        key: vcpkg-cache_${{ needs.arm64-android.outputs.key }}_${{ github.run_id }}
+        restore-keys: |
+          vcpkg-cache_${{ needs.arm64-android.outputs.key }}
+          vcpkg-artifacts-${{ needs.arm64-android.outputs.key }}
+        fail-on-cache-miss: true
+    - name: Restore arm64-macos assets
+      uses: actions/cache/restore@v5
+      with:
+        path: |
+          ${{ github.workspace }}/cache/downloads
+        key: vcpkg-cache_${{ needs.arm64-macos.outputs.key }}_${{ github.run_id }}
+        restore-keys: |
+          vcpkg-cache_${{ needs.arm64-macos.outputs.key }}
+          vcpkg-artifacts-${{ needs.arm64-macos.outputs.key }}
+        fail-on-cache-miss: true
+    - name: Restore x64-linux assets
       uses: actions/cache/restore@v5
       with:
         path: |
@@ -161,16 +182,27 @@ jobs:
           vcpkg-cache_${{ needs.x64-linux.outputs.key }}
           vcpkg-artifacts-${{ needs.x64-linux.outputs.key }}
         fail-on-cache-miss: true
+    -
+    - name: Restore x64-windows assets
+      uses: actions/cache/restore@v5
+      with:
+        path: |
+          ${{ github.workspace }}/cache/downloads
+        key: vcpkg-cache_${{ needs.x64-windows.outputs.key }}_${{ github.run_id }}
+        restore-keys: |
+          vcpkg-cache_${{ needs.x64-windows.outputs.key }}
+          vcpkg-artifacts-${{ needs.x64-windows.outputs.key }}
+        fail-on-cache-miss: true
     - name: run script
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        gh release create --draft my-release || true
-        gh release upload my-release ${{ github.workspace }}/cache/downloads/*
+        gh release create --draft --title assets-collection || true
+        gh release upload assets-collection ${{ github.workspace }}/cache/downloads/*
 
   upload-packages:
     name: Upload Mapper packages
-    needs: [ arm64-macos, x64-linux ]
+    needs: [ arm64-android, arm64-macos, x64-android, x64-macos, x64-linux, x64-windows ]
     if: ${{ needs.x64-linux.outputs.label == 'mapper' || needs.x64-linux.outputs.label == 'vcpkg' }}
     runs-on: ubuntu-24.04
     environment: Release
@@ -181,11 +213,29 @@ jobs:
       uses: actions/checkout@v6.1.0
       with:
         persist-credentials: false
+    - name: Restore arm64-android packages
+      uses: actions/cache/restore@v5
+      with:
+        path: build/OpenOrienteering-Mapper-*
+        key: mapper-package_${{ needs.arm64-android.outputs.key }}_${{ github.run_id }}
+        fail-on-cache-miss: true
     - name: Restore arm64-macos packages
       uses: actions/cache/restore@v5
       with:
         path: build/OpenOrienteering-Mapper-*
         key: mapper-package_${{ needs.arm64-macos.outputs.key }}_${{ github.run_id }}
+        fail-on-cache-miss: true
+    - name: Restore x64-android packages
+      uses: actions/cache/restore@v5
+      with:
+        path: build/OpenOrienteering-Mapper-*
+        key: mapper-package_${{ needs.x64-android.outputs.key }}_${{ github.run_id }}
+        fail-on-cache-miss: true
+    - name: Restore x64-macos packages
+      uses: actions/cache/restore@v5
+      with:
+        path: build/OpenOrienteering-Mapper-*
+        key: mapper-package_${{ needs.x64-macos.outputs.key }}_${{ github.run_id }}
         fail-on-cache-miss: true
     - name: Restore x64-linux packages
       uses: actions/cache/restore@v5
@@ -193,9 +243,15 @@ jobs:
         path: build/OpenOrienteering-Mapper-*
         key: mapper-package_${{ needs.x64-linux.outputs.key }}_${{ github.run_id }}
         fail-on-cache-miss: true
-    - name: run script
+    - name: Restore x64-windows packages
+      uses: actions/cache/restore@v5
+      with:
+        path: build/OpenOrienteering-Mapper-*
+        key: mapper-package_${{ needs.x64-windows.outputs.key }}_${{ github.run_id }}
+        fail-on-cache-miss: true
+    - name: Upload
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        gh release create --draft my-release || true
-        gh release upload my-release ${{ github.workspace }}/build/OpenOrienteering-Mapper-*
+        gh release create --draft --title Mapper-draft || true
+        gh release upload Mapper-draft ${{ github.workspace }}/build/OpenOrienteering-Mapper-*
