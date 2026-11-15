@@ -43,12 +43,8 @@ env:
 jobs:
   vcpkg:
     outputs:
-      hash:
-        description: "Configuration hash"
-        value: ${{ steps.vcpkg-configuration.hash }}
-      label:
-        description: "Workflow label"
-        value: ${{ steps.workflow-configuration.WORKFLOW_LABEL }}
+      hash: ${{ steps.vcpkg-configuration.hash }}
+      label: ${{ steps.workflow-configuration.WORKFLOW_LABEL }}
 
     strategy:
       fail-fast: false
