@@ -87,7 +87,7 @@ jobs:
       ARTIFACTS_KEY: ${{ secrets.ARTIFACTS_KEY }}
 
   x64-linux:
-    if: ${{ contains('^x64-linux$', inputs.target_pattern) }}
+    if: ${{ false && contains('^x64-linux$', inputs.target_pattern) }}
     uses: $/.github/workflows/vcpkg.yml
     with:
       runner: ubuntu-24.04
@@ -140,8 +140,8 @@ jobs:
 
   upload-assets:
     name: Upload source assets
-    needs: [ arm64-android, arm64-macos, x64-android, x64-macos, x64-linux, x64-windows ]
-    if: ${{ needs.x64-linux.outputs.label == 'vcpkg' }}
+    needs: [ arm64-android, arm64-macos, x64-android, x64-macos, x64-windows ]
+    if: ${{ needs.arm64-macos.outputs.label == 'vcpkg' }}
     runs-on: ubuntu-24.04
     environment: Release
     permissions:
@@ -152,7 +152,6 @@ jobs:
       with:
         persist-credentials: false
     - name: Restore arm64-android assets
-      if: false
       uses: actions/cache/restore@v5
       with:
         path: |
@@ -160,20 +159,27 @@ jobs:
         key: vcpkg-cache_${{ needs.arm64-android.outputs.key }}
         fail-on-cache-miss: true
     - name: Restore arm64-macos assets
-      if: false
       uses: actions/cache/restore@v5
       with:
         path: |
           ${{ github.workspace }}/cache/downloads
         key: vcpkg-cache_${{ needs.arm64-macos.outputs.key }}
         fail-on-cache-miss: true
-    - name: Restore x64-linux assets
+    - name: Restore x64-android assets
       uses: actions/cache/restore@v5
       with:
         path: |
           ${{ github.workspace }}/cache
           !${{ github.workspace }}/cache/downloads/tools
-        key: vcpkg-cache_${{ needs.x64-linux.outputs.key }}
+        key: vcpkg-cache_${{ needs.x64-android.outputs.key }}
+        fail-on-cache-miss: true
+    - name: Restore x64-osx assets
+      uses: actions/cache/restore@v5
+      with:
+        path: |
+          ${{ github.workspace }}/cache
+          !${{ github.workspace }}/cache/downloads/tools
+        key: vcpkg-cache_${{ needs.x64-osx.outputs.key }}
         fail-on-cache-miss: true
     - name: Restore x64-windows assets
       if: false
@@ -187,7 +193,7 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        rm ${{ github.workspace }}/cache/downloads/msys2-*
+        rm ${{ github.workspace }}/cache/downloads/msys2-* || true
         gh release create --draft --title assets-collection || true
         gh release upload --clobber assets-collection ${{ github.workspace }}/cache/downloads/*
 
