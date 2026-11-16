@@ -156,40 +156,28 @@ jobs:
       with:
         path: |
           ${{ github.workspace }}/cache/downloads
-        key: vcpkg-cache_${{ needs.arm64-android.outputs.key }}_${{ github.run_id }}
-        restore-keys: |
-          vcpkg-cache_${{ needs.arm64-android.outputs.key }}
-          vcpkg-artifacts-${{ needs.arm64-android.outputs.key }}
+        key: vcpkg-cache_${{ needs.arm64-android.outputs.key }}
         fail-on-cache-miss: true
     - name: Restore arm64-macos assets
       uses: actions/cache/restore@v5
       with:
         path: |
           ${{ github.workspace }}/cache/downloads
-        key: vcpkg-cache_${{ needs.arm64-macos.outputs.key }}_${{ github.run_id }}
-        restore-keys: |
-          vcpkg-cache_${{ needs.arm64-macos.outputs.key }}
-          vcpkg-artifacts-${{ needs.arm64-macos.outputs.key }}
+        key: vcpkg-cache_${{ needs.arm64-macos.outputs.key }}
         fail-on-cache-miss: true
     - name: Restore x64-linux assets
       uses: actions/cache/restore@v5
       with:
         path: |
           ${{ github.workspace }}/cache/downloads
-        key: vcpkg-cache_${{ needs.x64-linux.outputs.key }}_${{ github.run_id }}
-        restore-keys: |
-          vcpkg-cache_${{ needs.x64-linux.outputs.key }}
-          vcpkg-artifacts-${{ needs.x64-linux.outputs.key }}
+        key: vcpkg-cache_${{ needs.x64-linux.outputs.key }}
         fail-on-cache-miss: true
     - name: Restore x64-windows assets
       uses: actions/cache/restore@v5
       with:
         path: |
           ${{ github.workspace }}/cache/downloads
-        key: vcpkg-cache_${{ needs.x64-windows.outputs.key }}_${{ github.run_id }}
-        restore-keys: |
-          vcpkg-cache_${{ needs.x64-windows.outputs.key }}
-          vcpkg-artifacts-${{ needs.x64-windows.outputs.key }}
+        key: vcpkg-cache_${{ needs.x64-windows.outputs.key }}
         fail-on-cache-miss: true
     - name: run script
       env:
@@ -215,37 +203,38 @@ jobs:
       uses: actions/cache/restore@v5
       with:
         path: build/OpenOrienteering-Mapper-*
-        key: mapper-package_${{ needs.arm64-android.outputs.key }}_${{ github.run_id }}
+        key: mapper-package_${{ needs.arm64-android.outputs.key }}
         fail-on-cache-miss: true
     - name: Restore arm64-macos packages
       uses: actions/cache/restore@v5
       with:
         path: build/OpenOrienteering-Mapper-*
-        key: mapper-package_${{ needs.arm64-macos.outputs.key }}_${{ github.run_id }}
+        key: mapper-package_${{ needs.arm64-macos.outputs.key }}
         fail-on-cache-miss: true
     - name: Restore x64-android packages
       uses: actions/cache/restore@v5
       with:
         path: build/OpenOrienteering-Mapper-*
-        key: mapper-package_${{ needs.x64-android.outputs.key }}_${{ github.run_id }}
+        key: mapper-package_${{ needs.x64-android.outputs.key }}
         fail-on-cache-miss: true
     - name: Restore x64-macos packages
       uses: actions/cache/restore@v5
       with:
         path: build/OpenOrienteering-Mapper-*
-        key: mapper-package_${{ needs.x64-macos.outputs.key }}_${{ github.run_id }}
+        key: mapper-package_${{ needs.x64-macos.outputs.key }}
         fail-on-cache-miss: true
     - name: Restore x64-linux packages
       uses: actions/cache/restore@v5
       with:
         path: build/OpenOrienteering-Mapper-*
-        key: mapper-package_${{ needs.x64-linux.outputs.key }}_${{ github.run_id }}
+        key: mapper-package_${{ needs.x64-linux.outputs.key }}
         fail-on-cache-miss: true
     - name: Restore x64-windows packages
+      if: false
       uses: actions/cache/restore@v5
       with:
         path: build/OpenOrienteering-Mapper-*
-        key: mapper-package_${{ needs.x64-windows.outputs.key }}_${{ github.run_id }}
+        key: mapper-package_${{ needs.x64-windows.outputs.key }}
         fail-on-cache-miss: true
     - name: Upload
       env:
