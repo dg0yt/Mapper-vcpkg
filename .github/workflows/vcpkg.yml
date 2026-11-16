@@ -74,7 +74,7 @@ jobs:
             tee -a "$GITHUB_OUTPUT"
 
       - name: git checkout Mapper-vcpkg
-        if: ${{ steps.workflow-configuration.outputs.WORKFLOW_LABEL != 'vcpkg' }}
+        if: steps.workflow-configuration.outputs.WORKFLOW_LABEL != 'vcpkg'
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
@@ -256,8 +256,19 @@ jobs:
           path: ${{ github.workspace }}/vcpkg-export
           key: vcpkg-export-${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
 
+      - name: Restore gradle cache
+        if: contains(inputs.target-triplet, 'android')
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
       - name: git checkout Mapper
-        if: ${{ steps.workflow-configuration.outputs.WORKFLOW_LABEL != 'mapper' }}
+        if: steps.workflow-configuration.outputs.WORKFLOW_LABEL != 'mapper'
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
@@ -337,7 +348,7 @@ jobs:
 
       - name: Prepare private artifacts
         id: prepare-artifacts
-        if: ${{ env.UPLOAD_ARTIFACTS }}
+        if: env.UPLOAD_ARTIFACTS
         env:
           ARTIFACTS_KEY: ${{ secrets.ARTIFACTS_KEY }}
         run: |
