@@ -160,6 +160,7 @@ jobs:
         key: vcpkg-cache_${{ needs.arm64-android.outputs.key }}
         fail-on-cache-miss: true
     - name: Restore arm64-macos assets
+      if: false
       uses: actions/cache/restore@v5
       with:
         path: |
@@ -174,6 +175,7 @@ jobs:
         key: vcpkg-cache_${{ needs.x64-linux.outputs.key }}
         fail-on-cache-miss: true
     - name: Restore x64-windows assets
+      if: false
       uses: actions/cache/restore@v5
       with:
         path: |
@@ -184,8 +186,9 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
+        rm ${{ github.workspace }}/cache/downloads/msys2-*
         gh release create --draft --title assets-collection || true
-        gh release upload assets-collection ${{ github.workspace }}/cache/downloads/*
+        gh release upload --clobber assets-collection ${{ github.workspace }}/cache/downloads/*
 
   upload-packages:
     name: Upload Mapper packages
@@ -231,7 +234,6 @@ jobs:
         key: mapper-package_${{ needs.x64-linux.outputs.key }}
         fail-on-cache-miss: true
     - name: Restore x64-windows packages
-      if: false
       uses: actions/cache/restore@v5
       with:
         path: build/OpenOrienteering-Mapper-*
@@ -242,4 +244,4 @@ jobs:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         gh release create --draft --title Mapper-draft Mapper-draft || true
-        gh release upload Mapper-draft ${{ github.workspace }}/build/OpenOrienteering-Mapper-*
+        gh release upload --clobber Mapper-draft ${{ github.workspace }}/build/OpenOrienteering-Mapper-*
