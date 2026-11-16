@@ -39,8 +39,9 @@ env:
 jobs:
   vcpkg:
     outputs:
-      key: ${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
+      key: ${{ steps.vcpkg-configuration.outputs.key }}
       label: ${{ steps.workflow-configuration.outputs.WORKFLOW_LABEL }}
+      run_id: ${{ github.run_id }}
 
     strategy:
       fail-fast: false
@@ -345,7 +346,7 @@ jobs:
         with:
           path: build/OpenOrienteering-Mapper-*
           key: mapper-package_${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
-
+          enableCrossOsArchive: true
       - name: Prepare private artifacts
         id: prepare-artifacts
         if: env.UPLOAD_ARTIFACTS
