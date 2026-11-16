@@ -171,7 +171,8 @@ jobs:
       uses: actions/cache/restore@v5
       with:
         path: |
-          ${{ github.workspace }}/cache/downloads
+          ${{ github.workspace }}/cache
+          !${{ github.workspace }}/cache/downloads/tools
         key: vcpkg-cache_${{ needs.x64-linux.outputs.key }}
         fail-on-cache-miss: true
     - name: Restore x64-windows assets
@@ -192,8 +193,8 @@ jobs:
 
   upload-packages:
     name: Upload Mapper packages
-    needs: [ arm64-android, arm64-macos, x64-android, x64-macos, x64-linux, x64-windows ]
-    if: ${{ needs.x64-linux.outputs.label == 'mapper' || needs.x64-linux.outputs.label == 'vcpkg' }}
+    needs: [ arm64-android, arm64-macos, x64-android, x64-macos, x64-windows ]
+    if: ${{ needs.arm64-macos.outputs.label == 'mapper' || needs.arm64-macos.outputs.label == 'vcpkg' }}
     runs-on: ubuntu-24.04
     environment: Release
     permissions:
@@ -226,12 +227,6 @@ jobs:
       with:
         path: build/OpenOrienteering-Mapper-*
         key: mapper-package_${{ needs.x64-macos.outputs.key }}
-        fail-on-cache-miss: true
-    - name: Restore x64-linux packages
-      uses: actions/cache/restore@v5
-      with:
-        path: build/OpenOrienteering-Mapper-*
-        key: mapper-package_${{ needs.x64-linux.outputs.key }}
         fail-on-cache-miss: true
     - name: Restore x64-windows packages
       uses: actions/cache/restore@v5
