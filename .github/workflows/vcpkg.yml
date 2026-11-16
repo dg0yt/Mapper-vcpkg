@@ -25,6 +25,9 @@ on:
       label:
         description: "Workflow label"
         value: ${{ jobs.vcpkg.outputs.label }}
+      run_id:
+        description: "GitHub run ID"
+        value: ${{ jobs.vcpkg.outputs.run_id }}
     secrets:
       ARTIFACTS_KEY:
         required: false
@@ -157,10 +160,9 @@ jobs:
           key: vcpkg-export_${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
           restore-keys: |
             vcpkg-export_${{ steps.vcpkg-configuration.outputs.key }}
-            vcpkg-export-${{ steps.vcpkg-configuration.outputs.key }}
 
       - name: Restore vcpkg artifacts and tools
-        if: steps.restore-export.outputs.cache-hit == ''
+        # /* keep alive */ if: steps.restore-export.outputs.cache-hit == ''
         uses: actions/cache/restore@v5
         with:
           path: |
@@ -171,9 +173,6 @@ jobs:
             vcpkg-cache_${{ steps.vcpkg-configuration.outputs.key }}_
             vcpkg-cache_${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_
             vcpkg-cache_${{ inputs.host-triplet }}_
-            vcpkg-artifacts-${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_${{ steps.vcpkg-configuration.outputs.hash }}-
-            vcpkg-artifacts-${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_
-            vcpkg-artifacts-${{ inputs.host-triplet }}_
 
       - name: Install transitive system dependencies
         if: steps.restore-export.outputs.cache-hit == ''
