@@ -163,6 +163,7 @@ jobs:
         key: vcpkg-cache_${{ needs.arm64-android.outputs.key }}
         fail-on-cache-miss: true
     - name: Restore arm64-macos assets
+      if: false
       uses: actions/cache/restore@v5
       with:
         path: |
@@ -179,6 +180,7 @@ jobs:
         key: vcpkg-cache_${{ needs.x64-android.outputs.key }}
         fail-on-cache-miss: true
     - name: Restore x64-osx assets
+      if: false
       uses: actions/cache/restore@v5
       with:
         path: |
