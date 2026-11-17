@@ -161,13 +161,13 @@ jobs:
           restore-keys: |
             vcpkg-export_${{ steps.vcpkg-configuration.outputs.key }}
 
-      - name: Restore vcpkg artifacts and tools
+      - name: Restore vcpkg cache
         # /* keep alive */ if: steps.restore-export.outputs.cache-hit == ''
         uses: actions/cache/restore@v5
         with:
           path: |
-            ${{ github.workspace }}/cache
-            !${{ github.workspace }}/cache/downloads/tools
+            cache
+            !cache/downloads/tools
           key: vcpkg-cache_${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
           restore-keys: |
             vcpkg-cache_${{ steps.vcpkg-configuration.outputs.key }}_
@@ -220,36 +220,26 @@ jobs:
           test -z "$WORKFLOW_VCPKG_DIR" || cd "$WORKFLOW_VCPKG_DIR"
           vcpkg install --host-triplet="$HOST_TRIPLET" --triplet="$TARGET_TRIPLET" --x-install-root='${{ github.workspace }}/vcpkg_installed'
 
-      - name: Save vcpkg artifacts and tools to cache
+      - name: Save vcpkg cache
         if: always() && steps.restore-export.outputs.cache-hit == ''
         uses: actions/cache/save@v5
         with:
           path: |
-            ${{ github.workspace }}/cache
-            !${{ github.workspace }}/cache/downloads/tools
+            cache
+            !cache/downloads/tools
           key: vcpkg-cache_${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
 
       - name: vcpkg export
         if: steps.restore-export.outputs.cache-hit == ''
         env: *vcpkg_env
         run: |
-          case "$TARGET_TRIPLET" in
-          *windows*)
-            ;;
-          *)
-            find $GITHUB_WORKSPACE/vcpkg_installed/*/lib -type f -exec strip -S '{}' ';' || true
-            find $GITHUB_WORKSPACE/vcpkg_installed/*/plugins -type f -exec strip -S '{}' ';' || true
-            find $GITHUB_WORKSPACE/vcpkg_installed/*/tools -type f -executable -exec strip -S '{}' ';' || true
-            ;;
-          esac
           test -z "$WORKFLOW_VCPKG_DIR" || cd "$WORKFLOW_VCPKG_DIR"
           vcpkg export --raw --output-dir=$GITHUB_WORKSPACE --x-install-root=$GITHUB_WORKSPACE/vcpkg_installed
           cd "$GITHUB_WORKSPACE"
           mv vcpkg-export-* vcpkg-export
           cp -a $(cd "$VCPKG_INSTALLATION_ROOT"; pwd)/scripts/toolchains vcpkg-export/scripts
-          ls -l "$VCPKG_DOWNLOADS"
 
-      - name: Save vcpkg export to cache
+      - name: Save vcpkg export
         if: steps.restore-export.outputs.cache-hit == ''
         uses: actions/cache/save@v5
         with:
@@ -257,8 +247,9 @@ jobs:
           key: vcpkg-export-${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
 
       - name: Restore gradle cache
+        id: restore-gradle
         if: contains(inputs.target-triplet, 'android')
-        uses: actions/cache@v6
+        uses: actions/cache/restore@v5
         with:
           path: |
             ~/.gradle/caches
@@ -367,3 +358,12 @@ jobs:
           path: build/OpenOrienteering-Mapper-*.gpg
           compression-level: 0
           retention-days: 7
+
+      - name: Save gradle cache
+        if: contains(inputs.target-triplet, 'android') && steps.restore-gradle.outputs.cache-matched-key != ''
+        uses: actions/cache/save@v5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ github.run_id }}
