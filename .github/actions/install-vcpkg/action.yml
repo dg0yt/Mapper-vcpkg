@@ -1,0 +1,184 @@
+name: Install dependencies with vcpkg
+description: "Installs the required dependencies"
+inputs:
+  target-triplet:
+    required: true
+    type: string
+  host-triplet:
+    required: true
+    type: string
+  restore_export:
+    type: boolean
+    default: true
+outputs:
+  key:
+    description: "Cache key"
+    value: ${{ steps.vcpkg-configuration.outputs.key }}
+  label:
+    description: "Workflow label"
+    value: ${{ steps.workflow-configuration.outputs.label }}
+runs:
+  using: "composite"
+  steps:
+    - name: Determine workflow configuration
+      id: workflow-configuration
+      shell: bash
+      run: |
+        if test -f .github/WORKFLOW_LABEL && grep -q 'vcpkg' .github/WORKFLOW_LABEL
+        then
+          echo WORKFLOW_LABEL=vcpkg
+          echo WORKFLOW_VCPKG_DIR=
+          echo WORKFLOW_MAPPER_DIR=Mapper
+        else
+          echo WORKFLOW_LABEL=mapper
+          echo WORKFLOW_VCPKG_DIR=Mapper-vcpkg
+          echo WORKFLOW_MAPPER_DIR=
+        fi |
+          tee -a "$GITHUB_ENV" |
+          tee -a "$GITHUB_OUTPUT"
+
+    - name: git checkout Mapper-vcpkg
+      if: steps.workflow-configuration.outputs.WORKFLOW_LABEL != 'vcpkg'
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+        repository: dg0yt/Mapper-vcpkg
+        path: ${{ steps.workflow-configuration.outputs.WORKFLOW_VCPKG_DIR }}
+
+    - name: Determine vcpkg configuration
+      id: vcpkg-configuration
+      env: &vcpkg_env
+        VCPKG_DEFAULT_BINARY_CACHE: "${{ github.workspace }}/cache/artifacts"
+        VCPKG_DOWNLOADS: "${{ github.workspace }}/cache/downloads"
+      shell: bash
+      run: |
+        mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
+        mkdir -p "$VCPKG_DOWNLOADS"
+
+        test -z "$WORKFLOW_VCPKG_DIR" || cd "$WORKFLOW_VCPKG_DIR"
+        CONFIGURATION=$( \
+          find vcpkg.json vcpkg-configuration.json overlay-ports overlay-triplets -type f -exec sha1sum '{}' ';' | \
+          sed -e '/overlay-triplets[/]/ {' -e "/[/]$HOST_TRIPLET[.]cmake/ p" -e "/[/]$TARGET_TRIPLET[.]cmake/ p" -e 'd' -e '}' |
+          sort -u)
+        echo "$CONFIGURATION"
+        echo "$CONFIGURATION" |
+          sha1sum | \
+          (read HASH FILE; echo hash=$HASH; echo key="${HOST_TRIPLET}_${TARGET_TRIPLET}_${HASH}") | \
+          tee -a "$GITHUB_OUTPUT"
+
+        case "$TARGET_TRIPLET" in
+        *-android*)
+          TOOLCHAIN_FILE="$GITHUB_WORKSPACE/vcpkg-export/scripts/toolchains/android.cmake"
+          ;;
+        *-linux*)
+          TOOLCHAIN_FILE="$GITHUB_WORKSPACE/vcpkg-export/scripts/toolchains/linux.cmake"
+          ;;
+        *-osx*)
+          TOOLCHAIN_FILE="$GITHUB_WORKSPACE/vcpkg-export/scripts/toolchains/osx.cmake"
+          ;;
+        *-windows*)
+          TOOLCHAIN_FILE="$GITHUB_WORKSPACE/vcpkg-export/scripts/toolchains/windows.cmake"
+          ;;
+        *)
+          TOOLCHAIN_FILE="unknown-vcpkg-toolchain-file"
+          ;;
+        esac
+        echo "TOOLCHAIN_FILE=${TOOLCHAIN_FILE}" | tee -a "$GITHUB_ENV"
+
+    - name: Restore vcpkg export
+      id: restore-export
+      if: github.event_name == 'pull_request' || github.event_name == 'push' || inputs.restore_export
+      uses: actions/cache/restore@v5
+      with:
+        path: ${{ github.workspace }}/vcpkg-export
+        key: vcpkg-export_${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
+        restore-keys: |
+          vcpkg-export_${{ steps.vcpkg-configuration.outputs.key }}
+
+    - name: Restore vcpkg cache
+      # /* keep alive */ if: steps.restore-export.outputs.cache-hit == ''
+      uses: actions/cache/restore@v5
+      with:
+        path: |
+          cache
+        key: vcpkg-cache_${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
+        restore-keys: |
+          vcpkg-cache_${{ steps.vcpkg-configuration.outputs.key }}_
+          vcpkg-cache_${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_
+          vcpkg-cache_${{ inputs.host-triplet }}_
+
+    - name: Install transitive system dependencies
+      if: steps.restore-export.outputs.cache-hit == ''
+      shell: bash
+      run: |
+        case "$RUNNER_OS,$RUNNER_ARCH" in
+        macOS,X64)
+          brew install \
+            autoconf-archive automake
+          if test -d /usr/local/include ; then sudo mv /usr/local/include /usr/local/include-no-default ; fi
+          echo "#include <jconfig.h>"  | cc -E - || echo GOTCHA
+          ;;
+        macOS)
+          brew install \
+            autoconf autoconf-archive automake libtool
+          ;;
+        Linux)
+          sudo apt-get install \
+            autoconf-archive \
+            libltdl-dev \
+            mesa-common-dev libgl1-mesa-dev libglu1-mesa-dev libgles2-mesa-dev \
+            libx11-dev \
+            libxaw7-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libxinerama-dev \
+            libxkbcommon-x11-dev \
+            libxrandr-dev \
+            libxt-dev \
+            libxxf86vm-dev \
+            xutils-dev \
+            libxext-dev libxfixes-dev libxrender-dev \
+            libxcb1-dev libx11-xcb-dev libxcb-glx0-dev libxcb-util0-dev \
+            libxkbcommon-dev libxcb-keysyms1-dev \
+            libxcb-image0-dev libxcb-shm0-dev libxcb-icccm4-dev libxcb-sync-dev \
+            libxcb-xfixes0-dev libxcb-shape0-dev libxcb-randr0-dev \
+            libxcb-render-util0-dev libxcb-xinerama0-dev libxcb-xkb-dev libxcb-xinput-dev \
+            libxcb-cursor-dev \
+            libxtst-dev
+          ;;
+        esac
+
+    - name: vcpkg install --triplet=${{ inputs.target-triplet }}
+      if: steps.restore-export.outputs.cache-hit == ''
+      env: *vcpkg_env
+      shell: bash
+      run: |
+        test -z "$WORKFLOW_VCPKG_DIR" || cd "$WORKFLOW_VCPKG_DIR"
+        vcpkg install --host-triplet="$HOST_TRIPLET" --triplet="$TARGET_TRIPLET" --x-install-root='${{ github.workspace }}/vcpkg_installed'
+
+    - name: Save vcpkg cache
+      if: always() && steps.restore-export.outputs.cache-hit == ''
+      uses: actions/cache/save@v5
+      with:
+        path: |
+          cache
+          !cache/downloads/tools
+        key: vcpkg-cache_${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
+
+    - name: vcpkg export
+      if: steps.restore-export.outputs.cache-hit == ''
+      env: *vcpkg_env
+      shell: bash
+      run: |
+        test -z "$WORKFLOW_VCPKG_DIR" || cd "$WORKFLOW_VCPKG_DIR"
+        vcpkg export --raw --output-dir=$GITHUB_WORKSPACE --x-install-root=$GITHUB_WORKSPACE/vcpkg_installed
+        cd "$GITHUB_WORKSPACE"
+        mv vcpkg-export-* vcpkg-export
+        cp -a $(cd "$VCPKG_INSTALLATION_ROOT"; pwd)/scripts/toolchains vcpkg-export/scripts
+
+    - name: Save vcpkg export
+      if: steps.restore-export.outputs.cache-hit == ''
+      uses: actions/cache/save@v5
+      with:
+        path: ${{ github.workspace }}/vcpkg-export
+        key: vcpkg-export_${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
