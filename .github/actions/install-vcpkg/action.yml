@@ -36,6 +36,10 @@ runs:
         fi |
           tee -a "$GITHUB_ENV" |
           tee -a "$GITHUB_OUTPUT"
+        echo "VCPKG_DEFAULT_BINARY_CACHE=${{ github.workspace }}/cache/artifacts" |
+          tee -a "$GITHUB_ENV"
+        echo "VCPKG_DOWNLOADS=${{ github.workspace }}/cache/downloads" |
+          tee -a "$GITHUB_ENV"
 
     - name: git checkout Mapper-vcpkg
       if: steps.workflow-configuration.outputs.WORKFLOW_LABEL != 'vcpkg'
@@ -47,9 +51,6 @@ runs:
 
     - name: Determine vcpkg configuration
       id: vcpkg-configuration
-      env: &vcpkg_env
-        VCPKG_DEFAULT_BINARY_CACHE: "${{ github.workspace }}/cache/artifacts"
-        VCPKG_DOWNLOADS: "${{ github.workspace }}/cache/downloads"
       shell: bash
       run: |
         mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
@@ -150,7 +151,6 @@ runs:
 
     - name: vcpkg install --triplet=${{ inputs.target-triplet }}
       if: steps.restore-export.outputs.cache-hit == ''
-      env: *vcpkg_env
       shell: bash
       run: |
         test -z "$WORKFLOW_VCPKG_DIR" || cd "$WORKFLOW_VCPKG_DIR"
@@ -167,7 +167,6 @@ runs:
 
     - name: vcpkg export
       if: steps.restore-export.outputs.cache-hit == ''
-      env: *vcpkg_env
       shell: bash
       run: |
         test -z "$WORKFLOW_VCPKG_DIR" || cd "$WORKFLOW_VCPKG_DIR"
