@@ -201,6 +201,7 @@ jobs:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         rm ${{ github.workspace }}/cache/downloads/msys2-* || true
+        rm -Rf ${{ github.workspace }}/cache/downloads/tools
         gh release create --draft --title assets-collection assets-collection || true
         gh release upload --clobber assets-collection ${{ github.workspace }}/cache/downloads/*
 
