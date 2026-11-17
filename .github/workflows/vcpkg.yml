@@ -67,7 +67,7 @@ jobs:
         with:
           target-triplet: ${{ inputs.target-triplet }}
           host-triplet: ${{ inputs.host-triplet }}
-          restore_export: ${{ restore_export }}
+          restore_export: ${{ inputs.restore_export }}
 
       - name: General build system configuration
         run: |
