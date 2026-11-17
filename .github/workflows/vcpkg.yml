@@ -120,7 +120,7 @@ jobs:
       - name: Configure Mapper
         env:
           CMAKE_ARGS: ${{ inputs.cmake-args }}
-          WORKFLOW_MAPPER_DIR: ${{ case()}}
+          WORKFLOW_MAPPER_DIR: ${{ case(steps.install-vcpkg.outputs.label == 'vcpkg', 'Mapper', '') }}
         run: |
           mkdir build
           ${{ case(contains(inputs.target-triplet, 'windows'), 'cat << : | cmd /D /E:ON /V:OFF /K echo off', '') }}
