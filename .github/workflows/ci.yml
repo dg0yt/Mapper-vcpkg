@@ -158,52 +158,50 @@ jobs:
       uses: actions/cache/restore@v5
       with:
         path: |
-          ${{ github.workspace }}/cache
-          !${{ github.workspace }}/cache/downloads/tools
+          cache
+          !cache/downloads/tools
         key: vcpkg-cache_${{ needs.arm64-android.outputs.key }}
         fail-on-cache-miss: true
     - name: Restore arm64-macos assets
-      if: false
       uses: actions/cache/restore@v5
       with:
         path: |
-          ${{ github.workspace }}/cache
-          !${{ github.workspace }}/cache/downloads/tools
+          cache
+          !cache/downloads/tools
         key: vcpkg-cache_${{ needs.arm64-macos.outputs.key }}
         fail-on-cache-miss: true
     - name: Restore x64-android assets
       uses: actions/cache/restore@v5
       with:
         path: |
-          ${{ github.workspace }}/cache
-          !${{ github.workspace }}/cache/downloads/tools
+          cache
+          !cache/downloads/tools
         key: vcpkg-cache_${{ needs.x64-android.outputs.key }}
         fail-on-cache-miss: true
     - name: Restore x64-osx assets
-      if: false
       uses: actions/cache/restore@v5
       with:
         path: |
-          ${{ github.workspace }}/cache
-          !${{ github.workspace }}/cache/downloads/tools
+          cache
+          !cache/downloads/tools
         key: vcpkg-cache_${{ needs.x64-osx.outputs.key }}
         fail-on-cache-miss: true
     - name: Restore x64-windows assets
-      if: false
       uses: actions/cache/restore@v5
       with:
         path: |
-          ${{ github.workspace }}/cache/downloads
+          cache/downloads
+          !cache/downloads/tools
         key: vcpkg-cache_${{ needs.x64-windows.outputs.key }}
         fail-on-cache-miss: true
     - name: run script
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        rm ${{ github.workspace }}/cache/downloads/msys2-* || true
-        rm -Rf ${{ github.workspace }}/cache/downloads/tools
+        rm cache/downloads/msys2-* || true
+        rm -Rf cache/downloads/tools
         echo gh release create --draft --title assets-collection assets-collection || true
-        echo gh release upload --clobber assets-collection ${{ github.workspace }}/cache/downloads/*
+        echo gh release upload --clobber assets-collection cache/downloads/*
 
   upload-packages:
     name: Upload Mapper packages
