@@ -202,8 +202,8 @@ jobs:
       run: |
         rm ${{ github.workspace }}/cache/downloads/msys2-* || true
         rm -Rf ${{ github.workspace }}/cache/downloads/tools
-        gh release create --draft --title assets-collection assets-collection || true
-        gh release upload --clobber assets-collection ${{ github.workspace }}/cache/downloads/*
+        echo gh release create --draft --title assets-collection assets-collection || true
+        echo gh release upload --clobber assets-collection ${{ github.workspace }}/cache/downloads/*
 
   upload-packages:
     name: Upload Mapper packages
@@ -254,5 +254,5 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        gh release create --draft --title Mapper-draft Mapper-draft || true
-        gh release upload --clobber Mapper-draft ${{ github.workspace }}/build/OpenOrienteering-Mapper-*
+        echo gh release create --draft --title Mapper-draft Mapper-draft || true
+        echo gh release upload --clobber Mapper-draft ${{ github.workspace }}/build/OpenOrienteering-Mapper-*
