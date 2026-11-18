@@ -99,12 +99,26 @@ runs:
         restore-keys: |
           vcpkg-export_${{ steps.vcpkg-configuration.outputs.key }}
 
-    - name: Restore vcpkg cache
+    - name: Restore vcpkg assets
       # /* keep alive */ if: steps.restore-export.outputs.cache-hit == ''
       uses: actions/cache/restore@v5
       with:
+        path: cache/downloads
+        key: vcpkg-assets_${{ steps.vcpkg-configuration.outputs.key }}
+        restore-keys: |
+          vcpkg-assets_${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_
+          vcpkg-assets_${{ inputs.host-triplet }}_
+          vcpkg-assets_
+        enableCrossOsArchive: true
+
+    - name: Restore vcpkg artifacts
+      if: steps.restore-export.outputs.cache-hit == ''
+      uses: actions/cache/restore@v5
+      with:
+        # TODO
         path: |
           cache
+          !cache/downloads/tools
         key: vcpkg-cache_${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
         restore-keys: |
           vcpkg-cache_${{ steps.vcpkg-configuration.outputs.key }}_
@@ -159,13 +173,25 @@ runs:
         test -z "$WORKFLOW_VCPKG_DIR" || cd "$WORKFLOW_VCPKG_DIR"
         vcpkg install --host-triplet="$HOST_TRIPLET" --triplet="$TARGET_TRIPLET" --x-install-root='${{ github.workspace }}/vcpkg_installed'
 
-    - name: Save vcpkg cache
+    - name: Cleanup
+      if: steps.restore-export.outputs.cache-hit == ''
+      shell: bash
+      run: |
+        rm -Rf cache/downloads/tools
+
+    - name: Save vcpkg assets
       if: always() && steps.restore-export.outputs.cache-hit == ''
       uses: actions/cache/save@v5
       with:
-        path: |
-          cache
-          !cache/downloads/tools
+        path: cache/downloads
+        key: vcpkg-assets_${{ steps.vcpkg-configuration.outputs.key }}
+        enableCrossOsArchive: true
+
+    - name: Save vcpkg artifacts
+      if: always() && steps.restore-export.outputs.cache-hit == ''
+      uses: actions/cache/save@v5
+      with:
+        path: cache/artifacts
         key: vcpkg-cache_${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
 
     - name: vcpkg export
