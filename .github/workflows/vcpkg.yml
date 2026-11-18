@@ -71,18 +71,22 @@ jobs:
 
       - name: General build system configuration
         run: |
-          case "$RUNNER" in
-          macos*)
+          case "$RUNNER_OS" in
+          macOS)
             brew install doxygen
             brew --prefix
             # https://github.com/microsoft/vcpkg/issues/48417 ?
-            if test -d /usr/local/include ; then sudo mv /usr/local/include /usr/local/include-no-default ; fi
+            if test -d /usr/local/include && test "$RUNNER_ARCH" == "X64"
+            then
+              sudo mv /usr/local/include /usr/local/include-no-default
+            fi
+            echo "#include <jconfig.h>"  | cc -E - || echo GOTCHA
             ;;
-          ubuntu*)
+          Linux)
             sudo apt-get update
             sudo apt-get install doxygen
             ;;
-          windows*)
+          Windows)
             choco install --no-progress nsis
             echo 'C:\Program Files (x86)\NSIS' >> "$GITHUB_PATH"
             case "$HOST_TRIPLET,$TARGET_TRIPLET" in
@@ -127,7 +131,7 @@ jobs:
           ${{ case(contains(inputs.target-triplet, 'windows'), '$CALL_VCVARSALL', '') }}
           cmake -S "${WORKFLOW_MAPPER_DIR:-.}" -B build \
             -G Ninja \
-            -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$TOOLCHAIN_FILE \
+            -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${{ steps.install-vcpkg.outputs.toolchain-file }} \
             -DVCPKG_TARGET_TRIPLET=$TARGET_TRIPLET \
             -DVCPKG_HOST_TRIPLET=$HOST_TRIPLET \
             -DVCPKG_MANIFEST_MODE=OFF \

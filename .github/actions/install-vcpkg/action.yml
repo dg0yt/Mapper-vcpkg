@@ -17,6 +17,9 @@ outputs:
   label:
     description: "Workflow label"
     value: ${{ steps.workflow-configuration.outputs.label }}
+  toolchain-file:
+    description: "CMake toolchain file path"
+    value: ${{ steps.vcpkg-configuration.outputs.TOOLCHAIN_FILE }}
 runs:
   using: "composite"
   steps:
@@ -84,7 +87,7 @@ runs:
           TOOLCHAIN_FILE="unknown-vcpkg-toolchain-file"
           ;;
         esac
-        echo "TOOLCHAIN_FILE=${TOOLCHAIN_FILE}" | tee -a "$GITHUB_ENV"
+        echo "TOOLCHAIN_FILE=${TOOLCHAIN_FILE}" | tee -a "$GITHUB_OUTPUT"
 
     - name: Restore vcpkg export
       id: restore-export
@@ -112,20 +115,20 @@ runs:
       if: steps.restore-export.outputs.cache-hit == ''
       shell: bash
       run: |
-        case "$RUNNER_OS,$RUNNER_ARCH" in
-        macOS,X64)
-          brew install \
-            autoconf-archive automake
-          if test -d /usr/local/include ; then sudo mv /usr/local/include /usr/local/include-no-default ; fi
-          echo "#include <jconfig.h>"  | cc -E - || echo GOTCHA
-          ;;
+        case "$RUNNER_OS" in
         macOS)
           brew install \
             autoconf autoconf-archive automake libtool
+          # https://github.com/microsoft/vcpkg/issues/48417 ?
+          if test -d /usr/local/include && test "$RUNNER_ARCH" == "X64"
+          then
+            sudo mv /usr/local/include /usr/local/include-no-default
+          fi
+          echo "#include <jconfig.h>"  | cc -E - || echo GOTCHA
           ;;
         Linux)
           sudo apt-get install \
-            autoconf-archive \
+            autoconf autoconf-archive automake libtool \
             libltdl-dev \
             mesa-common-dev libgl1-mesa-dev libglu1-mesa-dev libgles2-mesa-dev \
             libx11-dev \
