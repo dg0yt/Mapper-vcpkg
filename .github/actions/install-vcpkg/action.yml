@@ -126,7 +126,7 @@ runs:
           vcpkg-cache_${{ inputs.host-triplet }}_
 
     - name: Install transitive system dependencies
-      if: ! steps.restore-export.outputs.cache-hit
+      if: ${{ !steps.restore-export.outputs.cache-hit }}
       shell: bash
       run: |
         case "$RUNNER_OS" in
@@ -168,7 +168,7 @@ runs:
 
     - name: vcpkg install --triplet=${{ inputs.target-triplet }}
       id: vcpkg-install
-      if: ! steps.restore-export.outputs.cache-hit
+      if: ${{ !steps.restore-export.outputs.cache-hit }}
       shell: bash
       run: |
         test -z "$WORKFLOW_VCPKG_DIR" || cd "$WORKFLOW_VCPKG_DIR"
@@ -177,13 +177,13 @@ runs:
         echo 'result=complete' >> "$GITHUB_OUTPUT"
 
     - name: Cleanup
-      if: !steps.restore-export.outputs.cache-hit && !cancelled()
+      if: ${{ !steps.restore-export.outputs.cache-hit && !cancelled() }}
       shell: bash
       run: |
         rm -Rf cache/downloads/tools
 
     - name: Save vcpkg assets
-      if: ! steps.restore-export.outputs.cache-hit && always()
+      if: ${{ !steps.restore-export.outputs.cache-hit && always() }}
       uses: actions/cache/save@v5
       with:
         path: cache/downloads
@@ -191,7 +191,7 @@ runs:
         enableCrossOsArchive: true
 
     - name: Save vcpkg artifacts
-      if: ! steps.restore-export.outputs.cache-hit && always()
+      if: ${{ !steps.restore-export.outputs.cache-hit && always() }}
       uses: actions/cache/save@v5
       with:
         path: cache/artifacts
