@@ -141,6 +141,7 @@ runs:
           echo "#include <jconfig.h>"  | cc -E - || echo GOTCHA
           ;;
         Linux)
+          sudo apt-get update
           sudo apt-get install \
             autoconf autoconf-archive automake libtool \
             libltdl-dev \
