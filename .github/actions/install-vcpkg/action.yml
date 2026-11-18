@@ -112,7 +112,7 @@ runs:
         enableCrossOsArchive: true
 
     - name: Restore vcpkg artifacts
-      if: ! steps.restore-export.outputs.cache-hit
+      if: ${{ !steps.restore-export.outputs.cache-hit }}
       uses: actions/cache/restore@v5
       with:
         # TODO
@@ -177,7 +177,7 @@ runs:
         echo 'result=complete' >> "$GITHUB_OUTPUT"
 
     - name: Cleanup
-      if: ! steps.restore-export.outputs.cache-hit && always()
+      if: !steps.restore-export.outputs.cache-hit && !cancelled()
       shell: bash
       run: |
         rm -Rf cache/downloads/tools
