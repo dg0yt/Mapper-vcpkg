@@ -216,7 +216,7 @@ jobs:
           retention-days: 7
 
       - name: Save gradle cache
-        if: contains(inputs.target-triplet, 'android') && steps.restore-gradle.outputs.cache-matched-key != ''
+        if: contains(inputs.target-triplet, 'android') && steps.restore-gradle.outputs.cache-matched-key == ''
         uses: actions/cache/save@v5
         with:
           path: |

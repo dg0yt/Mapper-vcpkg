@@ -91,28 +91,28 @@ runs:
 
     - name: Restore vcpkg export
       id: restore-export
-      if: github.event_name == 'pull_request' || github.event_name == 'push' || inputs.restore_export
+      if: steps.workflow-configuration.outputs.WORKFLOW_LABEL != 'vcpkg' || inputs.restore_export
       uses: actions/cache/restore@v5
       with:
         path: ${{ github.workspace }}/vcpkg-export
-        key: vcpkg-export_${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
-        restore-keys: |
-          vcpkg-export_${{ steps.vcpkg-configuration.outputs.key }}
+        key: vcpkg-export_${{ steps.vcpkg-configuration.outputs.key }}
 
     - name: Restore vcpkg assets
-      # /* keep alive */ if: steps.restore-export.outputs.cache-hit == ''
+      id: restore-assets
+      if: steps.workflow-configuration.outputs.WORKFLOW_LABEL == 'vcpkg'
       uses: actions/cache/restore@v5
       with:
         path: cache/downloads
-        key: vcpkg-assets_${{ steps.vcpkg-configuration.outputs.key }}
+        key: vcpkg-assets_${{ steps.vcpkg-configuration.outputs.key }}_complete
         restore-keys: |
+          vcpkg-assets_${{ steps.vcpkg-configuration.outputs.key }}_
           vcpkg-assets_${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_
           vcpkg-assets_${{ inputs.host-triplet }}_
           vcpkg-assets_
         enableCrossOsArchive: true
 
     - name: Restore vcpkg artifacts
-      if: steps.restore-export.outputs.cache-hit == ''
+      if: ! steps.restore-export.outputs.cache-hit
       uses: actions/cache/restore@v5
       with:
         # TODO
@@ -126,7 +126,7 @@ runs:
           vcpkg-cache_${{ inputs.host-triplet }}_
 
     - name: Install transitive system dependencies
-      if: steps.restore-export.outputs.cache-hit == ''
+      if: ! steps.restore-export.outputs.cache-hit
       shell: bash
       run: |
         case "$RUNNER_OS" in
@@ -167,35 +167,38 @@ runs:
         esac
 
     - name: vcpkg install --triplet=${{ inputs.target-triplet }}
-      if: steps.restore-export.outputs.cache-hit == ''
+      id: vcpkg-install
+      if: ! steps.restore-export.outputs.cache-hit
       shell: bash
       run: |
         test -z "$WORKFLOW_VCPKG_DIR" || cd "$WORKFLOW_VCPKG_DIR"
-        vcpkg install --host-triplet="$HOST_TRIPLET" --triplet="$TARGET_TRIPLET" --x-install-root='${{ github.workspace }}/vcpkg_installed'
+        vcpkg install --host-triplet="$HOST_TRIPLET" --triplet="$TARGET_TRIPLET" --only-downloads --no-binarycaching --x-install-root='${{ github.workspace }}/only_downloads' &&
+        vcpkg install --host-triplet="$HOST_TRIPLET" --triplet="$TARGET_TRIPLET" --x-install-root='${{ github.workspace }}/vcpkg_installed' &&
+        echo 'result=complete' >> "$GITHUB_OUTPUT"
 
     - name: Cleanup
-      if: steps.restore-export.outputs.cache-hit == ''
+      if: ! steps.restore-export.outputs.cache-hit && always()
       shell: bash
       run: |
         rm -Rf cache/downloads/tools
 
     - name: Save vcpkg assets
-      if: always() && steps.restore-export.outputs.cache-hit == ''
+      if: ! steps.restore-export.outputs.cache-hit && always()
       uses: actions/cache/save@v5
       with:
         path: cache/downloads
-        key: vcpkg-assets_${{ steps.vcpkg-configuration.outputs.key }}
+        key: vcpkg-assets_${{ steps.vcpkg-configuration.outputs.key }}_${{ steps.vcpkg-install.outputs.result }}
         enableCrossOsArchive: true
 
     - name: Save vcpkg artifacts
-      if: always() && steps.restore-export.outputs.cache-hit == ''
+      if: ! steps.restore-export.outputs.cache-hit && always()
       uses: actions/cache/save@v5
       with:
         path: cache/artifacts
         key: vcpkg-cache_${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
 
     - name: vcpkg export
-      if: steps.restore-export.outputs.cache-hit == ''
+      if: steps.vcpkg-install.outputs.result == 'complete'
       shell: bash
       run: |
         test -z "$WORKFLOW_VCPKG_DIR" || cd "$WORKFLOW_VCPKG_DIR"
@@ -205,8 +208,8 @@ runs:
         cp -a $(cd "$VCPKG_INSTALLATION_ROOT"; pwd)/scripts/toolchains vcpkg-export/scripts
 
     - name: Save vcpkg export
-      if: steps.restore-export.outputs.cache-hit == ''
+      if: steps.vcpkg-install.outputs.result == 'complete'
       uses: actions/cache/save@v5
       with:
         path: ${{ github.workspace }}/vcpkg-export
-        key: vcpkg-export_${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
+        key: vcpkg-export_${{ steps.vcpkg-configuration.outputs.key }}

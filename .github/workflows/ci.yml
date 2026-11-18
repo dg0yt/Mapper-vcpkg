@@ -158,31 +158,31 @@ jobs:
       uses: actions/cache/restore@v5
       with:
         path: cache/downloads
-        key: vcpkg-assets_${{ needs.arm64-android.outputs.key }}
+        key: vcpkg-assets_${{ needs.arm64-android.outputs.key }}_complete
         fail-on-cache-miss: true
     - name: Restore arm64-macos assets
       uses: actions/cache/restore@v5
       with:
         path: cache/downloads
-        key: vcpkg-assets_${{ needs.arm64-macos.outputs.key }}
+        key: vcpkg-assets_${{ needs.arm64-macos.outputs.key }}_complete
         fail-on-cache-miss: true
     - name: Restore x64-android assets
       uses: actions/cache/restore@v5
       with:
         path: cache/downloads
-        key: vcpkg-assets_${{ needs.x64-android.outputs.key }}
+        key: vcpkg-assets_${{ needs.x64-android.outputs.key }}_complete
         fail-on-cache-miss: true
     - name: Restore x64-osx assets
       uses: actions/cache/restore@v5
       with:
         path: cache/downloads
-        key: vcpkg-assets_${{ needs.x64-osx.outputs.key }}
+        key: vcpkg-assets_${{ needs.x64-osx.outputs.key }}_complete
         fail-on-cache-miss: true
     - name: Restore x64-windows assets
       uses: actions/cache/restore@v5
       with:
         path: cache/downloads
-        key: vcpkg-assets_${{ needs.x64-windows.outputs.key }}
+        key: vcpkg-assets_${{ needs.x64-windows.outputs.key }}_complete
         fail-on-cache-miss: true
     - name: run script
       env:
