@@ -1,4 +1,7 @@
-find_program(STRIP_COMMAND NAMES strip REQUIRED)
+find_program(STRIP_COMMAND NAMES strip)
+if(NOT STRIP_COMMAND)
+    return()
+endif()
 
 file(GLOB_RECURSE binaries LIST_DIRECTORIES false
     "${CURRENT_PACKAGES_DIR}/lib/*"
@@ -6,11 +9,13 @@ file(GLOB_RECURSE binaries LIST_DIRECTORIES false
     "${CURRENT_PACKAGES_DIR}/tools/*"
     "${CURRENT_PACKAGES_DIR}/debug/lib/*"
     "${CURRENT_PACKAGES_DIR}/debug/plugins/*"
-    "${CURRENT_PACKAGES_DIR}/tools/*"
+    "${CURRENT_PACKAGES_DIR}/debug/tools/*"
 )
 file(GLOB_RECURSE data LIST_DIRECTORIES false
     "${CURRENT_PACKAGES_DIR}/lib/pkgconfig/*"
+    "${CURRENT_PACKAGES_DIR}/tools/qt5/mkspecs/*"
     "${CURRENT_PACKAGES_DIR}/debug/lib/pkgconfig/*"
+    "${CURRENT_PACKAGES_DIR}/debug/tools/qt5/mkspecs/*"
 )
 list(REMOVE_ITEM binaries ${data} "")
 foreach(file IN LISTS binaries)

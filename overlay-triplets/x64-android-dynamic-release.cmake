@@ -8,3 +8,7 @@ set(VCPKG_CMAKE_CONFIGURE_OPTIONS -DANDROID_ABI=x86_64)
 
 set(VCPKG_BUILD_TYPE release)
 set(VCPKG_QT_TARGET_MKSPEC android-clang)
+
+list(APPEND Z_VCPKG_POST_PORTFILE_INCLUDES "${CMAKE_CURRENT_LIST_DIR}/../strip.cmake")
+file(GLOB ndk_paths "/usr/local/lib/android/sdk/ndk/*/toolchains/llvm/prebuilt/*/bin")
+find_program(STRIP_COMMAND NAMES strip PATHS ${ndk_paths})
