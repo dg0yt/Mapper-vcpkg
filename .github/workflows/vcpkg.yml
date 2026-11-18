@@ -69,7 +69,7 @@ jobs:
           host-triplet: ${{ inputs.host-triplet }}
           restore_export: ${{ inputs.restore_export }}
 
-      - name: General build system configuration
+      - name: Mapper build system configuration
         run: |
           case "$RUNNER_OS" in
           macOS)
@@ -222,4 +222,4 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ github.run_id }}
+          key: ${{ steps.restore-gradle.outputs.cache-primary-key }}
