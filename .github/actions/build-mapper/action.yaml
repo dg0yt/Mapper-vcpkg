@@ -76,6 +76,7 @@ runs:
       shell: bash
       env:
         CMAKE_ARGS: ${{ inputs.cmake-args }}
+        TARGET_TRIPLET: ${{ inputs.target-triplet }}
         WORKFLOW_MAPPER_DIR: ${{ case(inputs.label == 'vcpkg', 'Mapper', '.') }}
       run: |
         mkdir build
@@ -94,7 +95,7 @@ runs:
           -DCMAKE_POLICY_DEFAULT_CMP0177=NEW \
           -DCMAKE_SUPPRESS_REGENERATION=ON \
           -DLICENSING_PROVIDER=vcpkg \
-          ${{ case(contains(inputs.target-triplet, 'android'), '-DANDROID_DEPLOY_QT=$GITHUB_WORKSPACE/vcpkg-export/installed/${{ inputs.target-triplet }}/tools/qt5/bin/androiddeployqt', '') }} \
+          ${{ case(contains(inputs.target-triplet, 'android'), '-DANDROID_DEPLOY_QT=$GITHUB_WORKSPACE/vcpkg-export/installed/$TARGET_TRIPLET/tools/qt5/bin/androiddeployqt', '') }} \
           $CMAKE_ARGS \
           || exit 1
         :
