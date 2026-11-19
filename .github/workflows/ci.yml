@@ -102,14 +102,14 @@ jobs:
           persist-credentials: false
       - name: Install vcpkg packages
         id: install-vcpkg
-        uses: ./.github/actions/install-vcpkg
+        uses: dg0yt/Mapper-vcpkg/.github/actions/install-vcpkg@main
         with:
           target-triplet: ${{ env.TARGET_TRIPLET }}
           host-triplet: ${{ env.HOST_TRIPLET }}
           restore_export: ${{ inputs.restore_export != false }}
       - name: Build Mapper
         id: build-mapper
-        uses: ./.github/actions/build-mapper
+        uses: dg0yt/Mapper-vcpkg/.github/actions/build-mapper@main
         with:
           target-triplet: ${{ env.TARGET_TRIPLET }}
           host-triplet: ${{ env.HOST_TRIPLET }}

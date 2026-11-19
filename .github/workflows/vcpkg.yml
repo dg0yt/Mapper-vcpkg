@@ -60,7 +60,7 @@ jobs:
 
       - name: Install vcpkg packages
         id: install-vcpkg
-        uses: ./.github/actions/install-vcpkg
+        uses: dg0yt/Mapper-vcpkg/.github/actions/install-vcpkg@main
         with:
           target-triplet: ${{ inputs.target-triplet }}
           host-triplet: ${{ inputs.host-triplet }}
@@ -68,7 +68,7 @@ jobs:
 
       - name: Build Mapper
         id: build-mapper
-        uses: ./.github/actions/build-mapper
+        uses: dg0yt/Mapper-vcpkg/.github/actions/build-mapper@main
         with:
           target-triplet: ${{ inputs.target-triplet }}
           host-triplet: ${{ inputs.host-triplet }}
