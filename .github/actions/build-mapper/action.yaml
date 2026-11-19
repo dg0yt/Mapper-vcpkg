@@ -17,10 +17,7 @@ inputs:
     required: true
     type: string
 runs:
-  using: "composite"
-  env:
-    HOST_TRIPLET: ${{ inputs.host-triplet }}
-    TARGET_TRIPLET: ${{ inputs.target-triplet }}    
+  using: 'composite'
   steps:
     - name: Mapper build system configuration
       shell: bash
@@ -43,12 +40,12 @@ runs:
         Windows)
           choco install --no-progress nsis
           echo 'C:\Program Files (x86)\NSIS' >> "$GITHUB_PATH"
-          case "$HOST_TRIPLET,$TARGET_TRIPLET" in
+          case "${{ inputs.host-triplet }},${{ inputs.target-triplet }}" in
           x64-*,x64-*)
             echo 'CALL_VCVARSALL=call "C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" ' x64 >> "$GITHUB_ENV"
             ;;
           *)
-            echo "Unsupported triplet combination: $HOST_TRIPLET,$TARGET_TRIPLET"
+            echo "Unsupported triplet combination: ${{ inputs.host-triplet }},${{ inputs.target-triplet }}"
             exit 1
             ;;
           esac
@@ -87,8 +84,8 @@ runs:
         cmake -S "${WORKFLOW_MAPPER_DIR}" -B build \
           -G Ninja \
           -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${{ inputs.toolchain-file }} \
-          -DVCPKG_TARGET_TRIPLET=$TARGET_TRIPLET \
-          -DVCPKG_HOST_TRIPLET=$HOST_TRIPLET \
+          -DVCPKG_TARGET_TRIPLET=${{ inputs.target-triplet }} \
+          -DVCPKG_HOST_TRIPLET=${{ inputs.host-triplet }} \
           -DVCPKG_MANIFEST_MODE=OFF \
           -DCMAKE_TOOLCHAIN_FILE=$GITHUB_WORKSPACE/vcpkg-export/scripts/buildsystems/vcpkg.cmake \
           -DCMAKE_BUILD_TYPE=RelWithDebInfo \
@@ -97,7 +94,7 @@ runs:
           -DCMAKE_POLICY_DEFAULT_CMP0177=NEW \
           -DCMAKE_SUPPRESS_REGENERATION=ON \
           -DLICENSING_PROVIDER=vcpkg \
-          ${{ case(contains(inputs.target-triplet, 'android'), '-DANDROID_DEPLOY_QT=$GITHUB_WORKSPACE/vcpkg-export/installed/$TARGET_TRIPLET/tools/qt5/bin/androiddeployqt', '') }} \
+          ${{ case(contains(inputs.target-triplet, 'android'), '-DANDROID_DEPLOY_QT=$GITHUB_WORKSPACE/vcpkg-export/installed/${{ inputs.target-triplet }}/tools/qt5/bin/androiddeployqt', '') }} \
           $CMAKE_ARGS \
           || exit 1
         :
