@@ -52,8 +52,6 @@ jobs:
         -DANDROID_SDK=/usr/local/lib/android/sdk
         -DANDROID_SDK_BUILD_TOOLS_REVISION=34
         -DCMAKE_SYSTEM_VERSION=24
-    secrets:
-      ARTIFACTS_KEY: ${{ secrets.ARTIFACTS_KEY }}
 
   arm64-macos:
     if: ${{ contains('^arm64-macos$', inputs.target_pattern) }}
@@ -65,8 +63,6 @@ jobs:
       restore_export: ${{ inputs.restore_export != false }}
       cmake-args: >-
         -DMapper_SYSTEM_NAME=macOS-arm64
-    secrets:
-      ARTIFACTS_KEY: ${{ secrets.ARTIFACTS_KEY }}
 
   x64-android:
     if: ${{ contains('^x64-android$', inputs.target_pattern) }}
@@ -83,8 +79,6 @@ jobs:
         -DANDROID_SDK=/usr/local/lib/android/sdk
         -DANDROID_SDK_BUILD_TOOLS_REVISION=34
         -DCMAKE_SYSTEM_VERSION=24
-    secrets:
-      ARTIFACTS_KEY: ${{ secrets.ARTIFACTS_KEY }}
 
   x64-linux:
     if: ${{ false && contains('^x64-linux$', inputs.target_pattern) }}
@@ -94,8 +88,6 @@ jobs:
       target-triplet: x64-linux-dynamic-release
       host-triplet: x64-linux-dynamic-release
       restore_export: ${{ inputs.restore_export != false }}
-    secrets:
-      ARTIFACTS_KEY: ${{ secrets.ARTIFACTS_KEY }}
 
   x64-linux-debug:
     if: ${{ contains('^x64-linux-debug$', inputs.target_pattern) }}
@@ -107,8 +99,6 @@ jobs:
       restore_export: ${{ inputs.restore_export != false }}
       cmake-args: >+
         -DCMAKE_BUILD_TYPE=Debug
-    secrets:
-      ARTIFACTS_KEY: ${{ secrets.ARTIFACTS_KEY }}
 
   x64-macos:
     if: ${{ contains('^x64-macos$', inputs.target_pattern) }}
@@ -120,8 +110,6 @@ jobs:
       restore_export: ${{ inputs.restore_export != false }}
       cmake-args: 
         -DMapper_SYSTEM_NAME=macOS-x64
-    secrets:
-      ARTIFACTS_KEY: ${{ secrets.ARTIFACTS_KEY }}
 
   x64-windows:
     if: ${{ contains('^x64-windows$', inputs.target_pattern) }}
@@ -135,8 +123,6 @@ jobs:
         -DVCPKG_CRT_LINKAGE=dynamic
         -DCMAKE_C_COMPILER=cl
         -DCMAKE_CXX_COMPILER=cl
-    secrets:
-      ARTIFACTS_KEY: ${{ secrets.ARTIFACTS_KEY }}
 
   upload-assets:
     name: Upload source assets
