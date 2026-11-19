@@ -81,7 +81,7 @@ runs:
           TOOLCHAIN_FILE="$GITHUB_WORKSPACE/vcpkg-export/scripts/toolchains/osx.cmake"
           ;;
         *-windows*)
-          TOOLCHAIN_FILE="$GITHUB_WORKSPACE/vcpkg-export/scripts/toolchains/windows.cmake"
+          TOOLCHAIN_FILE="${GITHUB_WORKSPACE//\\/\/}/vcpkg-export/scripts/toolchains/windows.cmake"
           ;;
         *)
           TOOLCHAIN_FILE="unknown-vcpkg-toolchain-file"
