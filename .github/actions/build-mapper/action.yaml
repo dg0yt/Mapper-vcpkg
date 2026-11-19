@@ -76,6 +76,7 @@ runs:
       shell: bash
       env:
         CMAKE_ARGS: ${{ inputs.cmake-args }}
+        HOST_TRIPLET: ${{ inputs.host-triplet }}
         TARGET_TRIPLET: ${{ inputs.target-triplet }}
         WORKFLOW_MAPPER_DIR: ${{ case(inputs.label == 'vcpkg', 'Mapper', '.') }}
       run: |
@@ -85,8 +86,8 @@ runs:
         cmake -S "${WORKFLOW_MAPPER_DIR}" -B build \
           -G Ninja \
           -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${{ inputs.toolchain-file }} \
-          -DVCPKG_TARGET_TRIPLET=${{ inputs.target-triplet }} \
-          -DVCPKG_HOST_TRIPLET=${{ inputs.host-triplet }} \
+          -DVCPKG_TARGET_TRIPLET=$TARGET_TRIPLET \
+          -DVCPKG_HOST_TRIPLET=$HOST_TRIPLET \
           -DVCPKG_MANIFEST_MODE=OFF \
           -DCMAKE_TOOLCHAIN_FILE=$GITHUB_WORKSPACE/vcpkg-export/scripts/buildsystems/vcpkg.cmake \
           -DCMAKE_BUILD_TYPE=RelWithDebInfo \
