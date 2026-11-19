@@ -79,22 +79,23 @@ runs:
         HOST_TRIPLET: ${{ inputs.host-triplet }}
         TARGET_TRIPLET: ${{ inputs.target-triplet }}
         WORKFLOW_MAPPER_DIR: ${{ case(inputs.label == 'vcpkg', 'Mapper', '.') }}
+        CHAINLOAD_TOOLCHAIN_FILE: ${{ inputs.toolchain-file }} 
       run: |
         mkdir build
         ${{ case(contains(inputs.target-triplet, 'windows'), 'cat << : | cmd /D /E:ON /V:OFF /K echo off', '') }}
         ${{ case(contains(inputs.target-triplet, 'windows'), '$CALL_VCVARSALL', '') }}
         cmake -S "${WORKFLOW_MAPPER_DIR}" -B build \
           -G Ninja \
-          -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${{ inputs.toolchain-file }} \
-          -DVCPKG_TARGET_TRIPLET=$TARGET_TRIPLET \
-          -DVCPKG_HOST_TRIPLET=$HOST_TRIPLET \
-          -DVCPKG_MANIFEST_MODE=OFF \
           -DCMAKE_TOOLCHAIN_FILE=$GITHUB_WORKSPACE/vcpkg-export/scripts/buildsystems/vcpkg.cmake \
-          -DCMAKE_BUILD_TYPE=RelWithDebInfo \
           -DCMAKE_CROSSCOMPILING=${{ case(inputs.target-triplet != inputs.host-triplet, 'ON', 'OFF') }} \
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo \
           -DCMAKE_POLICY_DEFAULT_CMP0176=NEW \
           -DCMAKE_POLICY_DEFAULT_CMP0177=NEW \
           -DCMAKE_SUPPRESS_REGENERATION=ON \
+          -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$CHAINLOAD_TOOLCHAIN_FILE \
+          -DVCPKG_TARGET_TRIPLET=$TARGET_TRIPLET \
+          -DVCPKG_HOST_TRIPLET=$HOST_TRIPLET \
+          -DVCPKG_MANIFEST_MODE=OFF \
           -DLICENSING_PROVIDER=vcpkg \
           ${{ case(contains(inputs.target-triplet, 'android'), '-DANDROID_DEPLOY_QT=$GITHUB_WORKSPACE/vcpkg-export/installed/$TARGET_TRIPLET/tools/qt5/bin/androiddeployqt', '') }} \
           $CMAKE_ARGS \
