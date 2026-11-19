@@ -74,4 +74,4 @@ jobs:
           host-triplet: ${{ inputs.host-triplet }}
           key: ${{ steps.install-vcpkg.outputs.key }}
           label: ${{ steps.install-vcpkg.outputs.label }}
-          toolchain-file: ${{ steps.install-vcpkg.outputs.toolchain.file }}
+          toolchain-file: ${{ steps.install-vcpkg.outputs.toolchain-file }}
