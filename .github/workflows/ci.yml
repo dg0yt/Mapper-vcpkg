@@ -39,109 +39,132 @@ permissions: {}
 jobs:
   arm64-android:
     if: ${{ contains('^arm64-android$', inputs.target_pattern) }}
-    uses: $/.github/workflows/vcpkg.yml
-    with:
-      runner: ubuntu-24.04
-      target-triplet: arm64-android-dynamic-release
-      host-triplet: x64-linux-dynamic-release
-      restore_export: ${{ inputs.restore_export != false }}
-      cmake-args: >-
-        -DANDROID_ABI=arm64-v8a
-        -DANDROID_MIN_SDK_VERSION=24
-        -DANDROID_TARGET_SDK_VERSION=28
-        -DANDROID_SDK=/usr/local/lib/android/sdk
-        -DANDROID_SDK_BUILD_TOOLS_REVISION=34
-        -DCMAKE_SYSTEM_VERSION=24
+    runs-on: ubuntu-24.04
+    steps:
+    - name: git checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+    - name: Build
+      uses: dg0yt/Mapper-vcpkg/.github/actions/build-mapper@main
+      with:
+        target-triplet: arm64-android-dynamic-release
+        host-triplet: x64-linux-dynamic-release
+        restore_export: ${{ inputs.restore_export != false }}
+        cmake-args: >-
+          -DANDROID_ABI=arm64-v8a
+          -DANDROID_MIN_SDK_VERSION=24
+          -DANDROID_TARGET_SDK_VERSION=28
+          -DANDROID_SDK=/usr/local/lib/android/sdk
+          -DANDROID_SDK_BUILD_TOOLS_REVISION=34
+          -DCMAKE_SYSTEM_VERSION=24
 
   arm64-macos:
     if: ${{ contains('^arm64-macos$', inputs.target_pattern) }}
-    uses: $/.github/workflows/vcpkg.yml
-    with:
-      runner: macos-15
-      target-triplet: arm64-osx-dynamic-release
-      host-triplet: arm64-osx-dynamic-release
-      restore_export: ${{ inputs.restore_export != false }}
-      cmake-args: >-
-        -DMapper_SYSTEM_NAME=macOS-arm64
+    runs-on: macos-15
+    steps:
+    - name: git checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+    - name: Build
+      uses: dg0yt/Mapper-vcpkg/.github/actions/build-mapper@main
+      with:
+        target-triplet: arm64-osx-dynamic-release
+        host-triplet: arm64-osx-dynamic-release
+        restore_export: ${{ inputs.restore_export != false }}
+        cmake-args: >-
+          -DMapper_SYSTEM_NAME=macOS-arm64
 
   x64-android:
     if: ${{ contains('^x64-android$', inputs.target_pattern) }}
-    uses: $/.github/workflows/vcpkg.yml
-    with:
-      runner: ubuntu-24.04
-      target-triplet: x64-android-dynamic-release
-      host-triplet: x64-linux-dynamic-release
-      restore_export: ${{ inputs.restore_export != false }}
-      cmake-args: >-
-        -DANDROID_ABI=x86_64
-        -DANDROID_MIN_SDK_VERSION=24
-        -DANDROID_TARGET_SDK_VERSION=28
-        -DANDROID_SDK=/usr/local/lib/android/sdk
-        -DANDROID_SDK_BUILD_TOOLS_REVISION=34
-        -DCMAKE_SYSTEM_VERSION=24
+    runs-on: ubuntu-24.04
+    steps:
+    - name: git checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+    - name: Build
+      uses: dg0yt/Mapper-vcpkg/.github/actions/build-mapper@main
+      with:
+        target-triplet: x64-android-dynamic-release
+        host-triplet: x64-linux-dynamic-release
+        restore_export: ${{ inputs.restore_export != false }}
+        cmake-args: >-
+          -DANDROID_ABI=x86_64
+          -DANDROID_MIN_SDK_VERSION=24
+          -DANDROID_TARGET_SDK_VERSION=28
+          -DANDROID_SDK=/usr/local/lib/android/sdk
+          -DANDROID_SDK_BUILD_TOOLS_REVISION=34
+          -DCMAKE_SYSTEM_VERSION=24
 
   x64-linux:
     if: ${{ false && contains('^x64-linux$', inputs.target_pattern) }}
-    uses: $/.github/workflows/vcpkg.yml
-    with:
-      runner: ubuntu-24.04
-      target-triplet: x64-linux-dynamic-release
-      host-triplet: x64-linux-dynamic-release
-      restore_export: ${{ inputs.restore_export != false }}
+    runs-on: ubuntu-24.04
+    steps:
+    - name: git checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+    - name: Build
+      uses: dg0yt/Mapper-vcpkg/.github/actions/build-mapper@main
+      with:
+        target-triplet: x64-linux-dynamic-release
+        host-triplet: x64-linux-dynamic-release
+        restore_export: ${{ inputs.restore_export != false }}
 
   x64-linux-debug:
     if: ${{ contains('^x64-linux-debug$', inputs.target_pattern) }}
     runs-on: ubuntu-24.04
-    env:
-      TARGET_TRIPLET: x64-linux-dynamic-release
-      HOST_TRIPLET:   x64-linux-dynamic-release
     steps:
-      - name: git checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          persist-credentials: false
-      - name: Install vcpkg packages
-        id: install-vcpkg
-        uses: dg0yt/Mapper-vcpkg/.github/actions/install-vcpkg@main
-        with:
-          target-triplet: ${{ env.TARGET_TRIPLET }}
-          host-triplet: ${{ env.HOST_TRIPLET }}
-          restore_export: ${{ inputs.restore_export != false }}
-      - name: Build Mapper
-        id: build-mapper
-        uses: dg0yt/Mapper-vcpkg/.github/actions/build-mapper@main
-        with:
-          target-triplet: ${{ env.TARGET_TRIPLET }}
-          host-triplet: ${{ env.HOST_TRIPLET }}
-          key: ${{ steps.install-vcpkg.outputs.key }}_${{ github.run_id }}
-          label: ${{ steps.install-vcpkg.outputs.label }}
-          toolchain-file: ${{ steps.install-vcpkg.outputs.toolchain-file }}
-          cmake-args: >+
-            -DCMAKE_BUILD_TYPE=Debug
+    - name: git checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+    - name: Build
+      uses: dg0yt/Mapper-vcpkg/.github/actions/build-mapper@main
+      with:
+        target-triplet: x64-linux-dynamic-release
+        host-triplet: x64-linux-dynamic-release
+        restore_export: ${{ inputs.restore_export != false }}
+        cmake-args: >+
+          -DCMAKE_BUILD_TYPE=Debug
 
   x64-macos:
     if: ${{ contains('^x64-macos$', inputs.target_pattern) }}
-    uses: $/.github/workflows/vcpkg.yml
-    with:
-      runner: macos-15-intel
-      target-triplet: x64-osx-dynamic-release
-      host-triplet: x64-osx-dynamic-release
-      restore_export: ${{ inputs.restore_export != false }}
-      cmake-args: 
-        -DMapper_SYSTEM_NAME=macOS-x64
+    runs-on: macos-15-intel
+    steps:
+    - name: git checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+    - name: Build
+      uses: dg0yt/Mapper-vcpkg/.github/actions/build-mapper@main
+      with:
+        target-triplet: x64-osx-dynamic-release
+        host-triplet: x64-osx-dynamic-release
+        restore_export: ${{ inputs.restore_export != false }}
+        cmake-args: 
+          -DMapper_SYSTEM_NAME=macOS-x64
 
   x64-windows:
     if: ${{ contains('^x64-windows$', inputs.target_pattern) }}
-    uses: $/.github/workflows/vcpkg.yml
-    with:
-      runner: windows-2025-vs2026
-      target-triplet: x64-windows-dynamic-release
-      host-triplet: x64-windows-dynamic-release
-      restore_export: ${{ inputs.restore_export != false }}
-      cmake-args: 
-        -DVCPKG_CRT_LINKAGE=dynamic
-        -DCMAKE_C_COMPILER=cl
-        -DCMAKE_CXX_COMPILER=cl
+    runs-on: windows-2025-vs2026
+    steps:
+    - name: git checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+    - name: Build
+      uses: dg0yt/Mapper-vcpkg/.github/actions/build-mapper@main
+      with:
+        target-triplet: x64-windows-dynamic-release
+        host-triplet: x64-windows-dynamic-release
+        restore_export: ${{ inputs.restore_export != false }}
+        cmake-args: 
+          -DVCPKG_CRT_LINKAGE=dynamic
+          -DCMAKE_C_COMPILER=cl
+          -DCMAKE_CXX_COMPILER=cl
 
   upload-assets:
     name: Upload source assets

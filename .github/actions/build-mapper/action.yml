@@ -23,6 +23,13 @@ inputs:
   cmake-args:
     type: string
     default: ""
+outputs:
+  key:
+    description: "Cache key"
+    value: ${{ steps.results.outputs.package }}
+  label:
+    description: "Workflow label"
+    value: ${{ steps.results.outputs.label }}
 runs:
   using: 'composite'
   steps:
@@ -41,6 +48,7 @@ runs:
       run: |
         cat << : | tee -a "$GITHUB_OUTPUT"
         label=${{ inputs.label }}${{ steps.setup-vcpkg.outputs.label }}
+        key=${{ inputs.key }}${{ steps.setup-vcpkg.outputs.key }}
         toolchain-file=${{ inputs.toolchain-file }}${{ steps.setup-vcpkg.outputs.toolchain-file }}
         :
         case "$RUNNER_OS" in
@@ -164,12 +172,20 @@ runs:
         :
 
     - name: Save Mapper packages to cache
-      if: ${{ steps.setup.outputs.label == 'mapper' && inputs.key != '' }}
+      #if: ${{ steps.setup.outputs.label == 'mapper' }}
       uses: actions/cache/save@v5
       with:
         path: build/OpenOrienteering-Mapper-*
-        key: mapper-package_${{ inputs.key }}
+        key: mapper-package_${{ steps.setup.outputs.key }}_${{ github.run_id }}
         enableCrossOsArchive: true
+
+    - name: Save result outputs
+      #if: ${{ steps.setup.outputs.label == 'mapper' }}
+      id: results
+      shell: bash
+      run: |
+        echo "package=mapper-package_${{ steps.setup.outputs.key }}_${{ github.run_id }}" | tee -a "$GITHUB_OUTPUT"
+        echo "label=${{ steps.setup.outputs.label }}" | tee -a "$GITHUB_OUTPUT"
 
     - name: Save gradle cache
       if: contains(inputs.target-triplet, 'android') && steps.restore-gradle.outputs.cache-matched-key == ''
