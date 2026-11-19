@@ -176,7 +176,7 @@ jobs:
       uses: actions/cache/restore@v5
       with:
         path: cache/downloads
-        key: vcpkg-assets_${{ needs.x64-osx.outputs.key }}_complete
+        key: vcpkg-assets_${{ needs.x64-macos.outputs.key }}_complete
         fail-on-cache-miss: true
     - name: Restore x64-windows assets
       uses: actions/cache/restore@v5

@@ -115,10 +115,7 @@ runs:
       if: steps.restore-export.outputs.cache-hit != 'true'
       uses: actions/cache/restore@v5
       with:
-        # TODO
-        path: |
-          cache
-          !cache/downloads/tools
+        path: cache/artifacts
         key: vcpkg-cache_${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
         restore-keys: |
           vcpkg-cache_${{ steps.vcpkg-configuration.outputs.key }}_
