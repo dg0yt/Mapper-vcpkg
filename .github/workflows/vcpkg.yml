@@ -58,21 +58,12 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install vcpkg packages
-        id: install-vcpkg
-        uses: dg0yt/Mapper-vcpkg/.github/actions/install-vcpkg@main
-        with:
-          target-triplet: ${{ inputs.target-triplet }}
-          host-triplet: ${{ inputs.host-triplet }}
-          restore_export: ${{ inputs.restore_export }}
-
       - name: Build Mapper
         id: build-mapper
         uses: dg0yt/Mapper-vcpkg/.github/actions/build-mapper@main
         with:
           target-triplet: ${{ inputs.target-triplet }}
           host-triplet: ${{ inputs.host-triplet }}
-          key: ${{ steps.install-vcpkg.outputs.key }}
-          label: ${{ steps.install-vcpkg.outputs.label }}
-          toolchain-file: ${{ steps.install-vcpkg.outputs.toolchain-file }}
+          restore_export: ${{ inputs.restore_export }}
+          key: ${{ inputs.target-triplet }}_${{ github.run_id }}
           cmake-args: ${{ inputs.cmake-args }}

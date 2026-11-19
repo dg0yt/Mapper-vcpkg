@@ -113,7 +113,7 @@ jobs:
         with:
           target-triplet: ${{ env.TARGET_TRIPLET }}
           host-triplet: ${{ env.HOST_TRIPLET }}
-          key: ${{ steps.install-vcpkg.outputs.key }}
+          key: ${{ steps.install-vcpkg.outputs.key }}_${{ github.run_id }}
           label: ${{ steps.install-vcpkg.outputs.label }}
           toolchain-file: ${{ steps.install-vcpkg.outputs.toolchain-file }}
           cmake-args: >+

@@ -7,10 +7,14 @@ inputs:
   host-triplet:
     required: true
     type: string
+  restore_export:
+    type: boolean
+    default: true
   key:
-    required: true
+    description: An identifier used in cache keys
     type: string
   label:
+    description: A label controlling workflow behavior
     required: true
     type: string
   toolchain-file:
@@ -22,9 +26,23 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Mapper build system configuration
+    - name: vcpkg setup
+      id: setup-vcpkg
+      if: ${{ inputs.label == '' }}
+      uses: $/.github/actions/install-vcpkg
+      with:
+        target-triplet: ${{ inputs.target-triplet }}
+        host-triplet: ${{ inputs.host-triplet }}
+        restore_export: ${{ inputs.restore_export }}
+
+    - name: Build system setup
+      id: setup
       shell: bash
       run: |
+        cat << : | tee -a "$GITHUB_OUTPUT"
+        label=${{ inputs.label }}${{ steps.setup-vcpkg.outputs.label }}
+        toolchain-file=${{ inputs.toolchain-file }}${{ steps.setup-vcpkg.outputs.toolchain-file }}
+        :
         case "$RUNNER_OS" in
         macOS)
           brew install doxygen
@@ -68,7 +86,7 @@ runs:
           ${{ runner.os }}-gradle-
 
     - name: git checkout Mapper
-      if: inputs.label == 'vcpkg'
+      if: steps.setup.outputs.label == 'vcpkg'
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         persist-credentials: false
@@ -81,7 +99,7 @@ runs:
         CMAKE_ARGS: ${{ inputs.cmake-args }}
         HOST_TRIPLET: ${{ inputs.host-triplet }}
         TARGET_TRIPLET: ${{ inputs.target-triplet }}
-        WORKFLOW_MAPPER_DIR: ${{ case(inputs.label == 'vcpkg', 'Mapper', '.') }}
+        WORKFLOW_MAPPER_DIR: ${{ case(steps.setup.outputs.label == 'vcpkg', 'Mapper', '.') }}
       run: |
         mkdir build
         ${{ case(contains(inputs.target-triplet, 'windows'), 'cat << : | cmd /D /E:ON /V:OFF /K echo off', '') }}
@@ -94,7 +112,7 @@ runs:
           -DCMAKE_POLICY_DEFAULT_CMP0176=NEW \
           -DCMAKE_POLICY_DEFAULT_CMP0177=NEW \
           -DCMAKE_SUPPRESS_REGENERATION=ON \
-          -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${{ inputs.toolchain-file }} \
+          -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${{ steps.setup.outputs.toolchain-file }} \
           -DVCPKG_TARGET_TRIPLET=$TARGET_TRIPLET \
           -DVCPKG_HOST_TRIPLET=$HOST_TRIPLET \
           -DVCPKG_MANIFEST_MODE=OFF \
@@ -146,11 +164,11 @@ runs:
         :
 
     - name: Save Mapper packages to cache
-      #if: ${{ steps.workflow-configuration.outputs.WORKFLOW_LABEL 0= 'mapper' }}
+      if: ${{ steps.setup.outputs.label == 'mapper' && inputs.key != '' }}
       uses: actions/cache/save@v5
       with:
         path: build/OpenOrienteering-Mapper-*
-        key: mapper-package_${{ inputs.key }}_${{ github.run_id }}
+        key: mapper-package_${{ inputs.key }}
         enableCrossOsArchive: true
 
     - name: Save gradle cache
