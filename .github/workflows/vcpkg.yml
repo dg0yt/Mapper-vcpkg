@@ -75,3 +75,4 @@ jobs:
           key: ${{ steps.install-vcpkg.outputs.key }}
           label: ${{ steps.install-vcpkg.outputs.label }}
           toolchain-file: ${{ steps.install-vcpkg.outputs.toolchain-file }}
+          cmake-args: ${{ inputs.cmake-args }}

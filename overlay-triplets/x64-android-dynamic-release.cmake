@@ -11,4 +11,4 @@ set(VCPKG_QT_TARGET_MKSPEC android-clang)
 
 list(APPEND Z_VCPKG_POST_PORTFILE_INCLUDES "${CMAKE_CURRENT_LIST_DIR}/../strip.cmake")
 file(GLOB ndk_paths "/usr/local/lib/android/sdk/ndk/*/toolchains/llvm/prebuilt/*/bin")
-find_program(STRIP_COMMAND NAMES strip PATHS ${ndk_paths})
+find_program(STRIP_COMMAND NAMES llvm-strip PATHS ${ndk_paths})
