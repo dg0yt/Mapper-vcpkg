@@ -42,7 +42,7 @@ runs:
         :
 
     - name: git checkout Mapper-vcpkg
-      if: steps.workflow-configuration.outputs.label != 'vcpkg'
+      if: ${{ steps.workflow-configuration.outputs.label != 'vcpkg' }}
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         persist-credentials: false
@@ -92,7 +92,7 @@ runs:
 
     - name: Restore vcpkg export
       id: restore-export
-      if: steps.workflow-configuration.outputs.label != 'vcpkg' || inputs.restore_export
+      if: ${{ steps.workflow-configuration.outputs.label != 'vcpkg' || inputs.restore_export }}
       uses: actions/cache/restore@v5
       with:
         path: ${{ github.workspace }}/vcpkg-export
@@ -100,7 +100,7 @@ runs:
 
     - name: Restore vcpkg assets
       id: restore-assets
-      if: steps.workflow-configuration.outputs.label == 'vcpkg'
+      if: ${{ steps.workflow-configuration.outputs.label == 'vcpkg' || steps.restore-export.outputs.cache-hit != 'true' }}
       uses: actions/cache/restore@v5
       with:
         path: cache/downloads
@@ -113,7 +113,7 @@ runs:
         enableCrossOsArchive: true
 
     - name: Restore vcpkg artifacts
-      if: steps.restore-export.outputs.cache-hit != 'true'
+      if: ${{ steps.restore-export.outputs.cache-hit != 'true' }}
       uses: actions/cache/restore@v5
       with:
         path: cache/artifacts
@@ -124,7 +124,7 @@ runs:
           vcpkg-cache_${{ inputs.host_triplet }}_
 
     - name: Install transitive system dependencies
-      if: steps.restore-export.outputs.cache-hit != 'true'
+      if: ${{ steps.restore-export.outputs.cache-hit != 'true' }}
       shell: bash
       run: |
         set -e
@@ -168,7 +168,7 @@ runs:
 
     - name: vcpkg install --triplet=${{ inputs.target_triplet }}
       id: vcpkg-install
-      if: steps.restore-export.outputs.cache-hit != 'true'
+      if: ${{ steps.restore-export.outputs.cache-hit != 'true' }}
       shell: bash
       env:
         HOST_TRIPLET: ${{ inputs.host_triplet }}
@@ -185,14 +185,14 @@ runs:
         vcpkg install --host-triplet="$HOST_TRIPLET" --triplet="$TARGET_TRIPLET" --x-install-root="$GITHUB_WORKSPACE/vcpkg_installed"
 
     - name: Cleanup
-      if: steps.restore-export.outputs.cache-hit != 'true' && always()
+      if: ${{ steps.restore-export.outputs.cache-hit != 'true' && always() }}
       shell: bash
       run: |
         set -e
         rm -Rf cache/downloads/tools
 
     - name: Save vcpkg assets
-      if: steps.restore-export.outputs.cache-hit != 'true' && always()
+      if: ${{ steps.restore-export.outputs.cache-hit != 'true' && always() }}
       uses: actions/cache/save@v5
       with:
         path: cache/downloads
@@ -200,7 +200,7 @@ runs:
         enableCrossOsArchive: true
 
     - name: Save vcpkg artifacts
-      if: steps.restore-export.outputs.cache-hit != 'true' && always()
+      if: ${{ steps.restore-export.outputs.cache-hit != 'true' && always() }}
       uses: actions/cache/save@v5
       with:
         path: cache/artifacts

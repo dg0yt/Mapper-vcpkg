@@ -46,18 +46,18 @@ runs:
       id: setup
       shell: bash
       env:
-        LABEL: ${{ inputs.label }}
-        KEY: ${{ inputs.key }}
-        TOOLCHAIN_FILE: ${{ inputs.toolchain_file }}
+        LABEL: ${{ case(inputs.label == '', steps.setup-vcpkg.outputs.label, inputs.label) }}
+        KEY: ${{ case(inputs.label == '', steps.setup-vcpkg.outputs.key, inputs.key) }}
+        TOOLCHAIN_FILE: ${{ case(inputs.label == '', steps.setup-vcpkg.outputs.toolchain_file, inputs.toolchain_file) }}
         HOST_TRIPLET: ${{ inputs.host_triplet }}
         TARGET_TRIPLET: ${{ inputs.target_triplet }}
       run: |
         set -e
         cat << : | tee -a "$GITHUB_OUTPUT"
-        label=${{ case(inputs.label == '', steps.setup-vcpkg.outputs.label, '${LABEL}') }}
-        key=${{ case(inputs.label == '', steps.setup-vcpkg.outputs.key, '${KEY}') }}
-        toolchain_file=${{ case(inputs.label == '', steps.setup-vcpkg.outputs.toolchain_file, '${TOOLCHAIN_FILE}') }}
-        package=mapper-package_${{ case(inputs.label == '', steps.setup-vcpkg.outputs.key, '${KEY}') }}_${{ github.run_id }}
+        label=$LABEL
+        key=$KEY
+        toolchain_file=$TOOLCHAIN_FILE
+        package=mapper-package_${KEY}_${{ github.run_id }}
         :
         case "$RUNNER_OS" in
         macOS)
