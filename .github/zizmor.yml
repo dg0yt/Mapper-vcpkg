@@ -4,8 +4,8 @@ rules:
       policies:
         actions/*: ref-pin
         softprops/*: ref-pin
-        OpenOrienteering/Mapper-vcpkg/.github/actions/*: any
-        dg0yt/Mapper-vcpkg/.github/actions/*: any
+        OpenOrienteering/Mapper-vcpkg/.github/actions/build-mapper: any
+        dg0yt/Mapper-vcpkg/.github/actions/build-mapper: any
   unsound-contains:
     ignore:
       # "contains" for target string pattern matching
