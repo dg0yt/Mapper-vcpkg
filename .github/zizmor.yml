@@ -5,7 +5,7 @@ rules:
         actions/*: ref-pin
         softprops/*: ref-pin
         OpenOrienteering/Mapper-vcpkg/.github/workflows/ci.yml: any
-        dg0yt/Mapper-vcpkg/.github/workflows/ci.yml: any
+        dg0yt/Mapper-vcpkg/.github/actions/build-mapper@main: any
   unsound-contains:
     ignore:
       # "contains" for target string pattern matching
