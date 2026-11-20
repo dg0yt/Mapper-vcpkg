@@ -17,7 +17,7 @@ outputs:
   label:
     description: "Workflow label"
     value: ${{ steps.workflow-configuration.outputs.WORKFLOW_LABEL }}
-  toolchain-file:
+  toolchain_file:
     description: "CMake toolchain file path"
     value: ${{ steps.vcpkg-configuration.outputs.TOOLCHAIN_FILE }}
 runs:
