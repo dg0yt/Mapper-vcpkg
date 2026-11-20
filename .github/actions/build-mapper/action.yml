@@ -24,12 +24,12 @@ inputs:
     type: string
     default: ""
 outputs:
-  key:
-    description: "Cache key"
-    value: ${{ steps.results.outputs.package }}
   label:
     description: "Workflow label"
-    value: ${{ steps.results.outputs.label }}
+    value: ${{ steps.setup.outputs.label }}
+  package:
+    description: "Cache key for package"
+    value: ${{ steps.setup.outputs.package }}
 runs:
   using: 'composite'
   steps:
@@ -46,16 +46,18 @@ runs:
       id: setup
       shell: bash
       env:
-        INPUT_LABEL: ${{ inputs.label }}
-        INPUT_KEY: ${{ inputs.key }}
-        INPUT_TOOLCHAIN_FILE: ${{ inputs.toolchain_file }}
+        LABEL: ${{ case(inputs.label == '', steps.setup-vcpkg.outputs.label, inputs.label) }}
+        KEY: ${{ case(inputs.label == '', steps.setup-vcpkg.outputs.key, inputs.key) }}
+        TOOLCHAIN_FILE: ${{ case(inputs.label == '', steps.setup-vcpkg.outputs.toolchain_file, inputs.toolchain_file) }}
         HOST_TRIPLET: ${{ inputs.host_triplet }}
         TARGET_TRIPLET: ${{ inputs.target_triplet }}
       run: |
+        set -e
         cat << : | tee -a "$GITHUB_OUTPUT"
-        label=${{ case(inputs.label == '', steps.setup-vcpkg.outputs.label, '$INPUT_LABEL') }}
-        key=${{ case(inputs.label == '', steps.setup-vcpkg.outputs.key, '$INPUT_KEY') }}
-        toolchain_file=${{ case(inputs.label == '', steps.setup-vcpkg.outputs.toolchain_file, '$INPUT_TOOLCHAIN_FILE') }}
+        label=$LABEL
+        key=$KEY
+        toolchain_file=$TOOLCHAIN_FILE
+        package=mapper-package_${KEY}_${{ github.run_id }}
         :
         case "$RUNNER_OS" in
         macOS)
@@ -115,6 +117,7 @@ runs:
         TARGET_TRIPLET: ${{ inputs.target_triplet }}
         WORKFLOW_MAPPER_DIR: ${{ case(steps.setup.outputs.label == 'vcpkg', 'Mapper', '.') }}
       run: |
+        set -e
         mkdir build
         ${{ case(contains(inputs.target_triplet, 'windows'), 'cat << : | cmd /D /E:ON /V:OFF /K echo off', '') }}
         ${{ case(contains(inputs.target_triplet, 'windows'), '$CALL_VCVARSALL', '') }}
@@ -139,10 +142,10 @@ runs:
     - name: Build Mapper
       shell: bash
       run: |
+        set -e
         ${{ case(contains(inputs.target_triplet, 'windows'), 'cat << : | cmd /D /E:ON /V:OFF /K echo off', '') }}
         ${{ case(contains(inputs.target_triplet, 'windows'), '$CALL_VCVARSALL', '') }}
-        cmake --build build \
-          || exit 1
+        cmake --build build
         :
 
     - name: Run Mapper tests
@@ -158,23 +161,23 @@ runs:
         # Needs Qt 6.5
         QT_WIN_DEBUG_CONSOLE: attach
       run: |
+        set -e
         ${{ case(contains(inputs.target_triplet, 'windows'), 'cat << : | cmd /D /E:ON /V:OFF /K echo off', '') }}
         ${{ case(contains(inputs.target_triplet, 'windows'), 'set PATH=%GITHUB_WORKSPACE%\vcpkg-export\installed\%TARGET_TRIPLET%\bin;%PATH%', '') }}
         ${{ case(contains(inputs.target_triplet, 'windows'), 'set QT_PLUGIN_PATH=%GITHUB_WORKSPACE%\vcpkg-export\installed\%TARGET_TRIPLET%\plugins', '') }}
         ${{ case(contains(inputs.target_triplet, 'windows'), '$CALL_VCVARSALL', '') }}
         ${{ case(contains(inputs.target_triplet, 'windows'), 'mkdir build\test\lib\fonts', '') }}
-        ctest --test-dir build --output-on-failure --timeout 60 \
-          || exit 1
+        ctest --test-dir build --output-on-failure --timeout 60
         :
 
     # Separate step because the DMG unmount is unreliable
     - name: Build Mapper package
       shell: bash
       run: |
+        set -e
         ${{ case(contains(inputs.target_triplet, 'windows'), 'cat << : | cmd /D /E:ON /V:OFF /K echo off', '') }}
         ${{ case(contains(inputs.target_triplet, 'windows'), '$CALL_VCVARSALL', '') }}
-        cmake --build build --target package \
-          || exit 1
+        cmake --build build --target package
         :
 
     - name: Save Mapper packages to cache
@@ -182,16 +185,8 @@ runs:
       uses: actions/cache/save@v5
       with:
         path: build/OpenOrienteering-Mapper-*
-        key: mapper-package_${{ steps.setup.outputs.key }}_${{ github.run_id }}
+        key: ${{ steps.setup.outputs.package }}
         enableCrossOsArchive: true
-
-    - name: Save result outputs
-      #if: ${{ steps.setup.outputs.label == 'mapper' }}
-      id: results
-      shell: bash
-      run: |
-        echo "package=mapper-package_${{ steps.setup.outputs.key }}_${{ github.run_id }}" | tee -a "$GITHUB_OUTPUT"
-        echo "label=${{ steps.setup.outputs.label }}" | tee -a "$GITHUB_OUTPUT"
 
     - name: Save gradle cache
       if: contains(inputs.target_triplet, 'android') && steps.restore-gradle.outputs.cache-matched-key == ''

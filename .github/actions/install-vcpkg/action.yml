@@ -16,10 +16,10 @@ outputs:
     value: ${{ steps.vcpkg-configuration.outputs.key }}
   label:
     description: "Workflow label"
-    value: ${{ steps.workflow-configuration.outputs.WORKFLOW_LABEL }}
+    value: ${{ steps.workflow-configuration.outputs.label }}
   toolchain_file:
     description: "CMake toolchain file path"
-    value: ${{ steps.vcpkg-configuration.outputs.TOOLCHAIN_FILE }}
+    value: ${{ steps.vcpkg-configuration.outputs.toolchain_file }}
 runs:
   using: "composite"
   steps:
@@ -27,28 +27,27 @@ runs:
       id: workflow-configuration
       shell: bash
       run: |
+        set -e
         if test -f .github/WORKFLOW_LABEL && grep -q 'vcpkg' .github/WORKFLOW_LABEL
         then
-          echo WORKFLOW_LABEL=vcpkg
-          echo WORKFLOW_VCPKG_DIR=
+          LABEL=vcpkg
+          VCPKG_DIR=
         else
-          echo WORKFLOW_LABEL=mapper
-          echo WORKFLOW_VCPKG_DIR=Mapper-vcpkg
-        fi |
-          tee -a "$GITHUB_ENV" |
-          tee -a "$GITHUB_OUTPUT"
-        echo "VCPKG_DEFAULT_BINARY_CACHE=$GITHUB_WORKSPACE/cache/artifacts" |
-          tee -a "$GITHUB_ENV"
-        echo "VCPKG_DOWNLOADS=$GITHUB_WORKSPACE/cache/downloads" |
-          tee -a "$GITHUB_ENV"
+          LABEL=mapper
+          VCPKG_DIR=Mapper-vcpkg
+        fi
+        cat : | tee -a "$GITHUB_OUTPUT"
+          label=$LABEL
+          vcpkg_dir=$VCPKG_DIR
+        :
 
     - name: git checkout Mapper-vcpkg
-      if: steps.workflow-configuration.outputs.WORKFLOW_LABEL != 'vcpkg'
+      if: steps.workflow-configuration.outputs.label != 'vcpkg'
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         persist-credentials: false
         repository: dg0yt/Mapper-vcpkg
-        path: ${{ steps.workflow-configuration.outputs.WORKFLOW_VCPKG_DIR }}
+        path: ${{ steps.workflow-configuration.outputs.vcpkg_dir }}
 
     - name: Determine vcpkg configuration
       id: vcpkg-configuration
@@ -56,20 +55,16 @@ runs:
       env:
         HOST_TRIPLET: ${{ inputs.host_triplet }}
         TARGET_TRIPLET: ${{ inputs.target_triplet }}
+        WORKFLOW_VCPKG_DIR: ${{ steps.workflow-configuration.outputs.vcpkg_dir }}
       run: |
-        mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
-        mkdir -p "$VCPKG_DOWNLOADS"
-
+        set -e
         test -z "$WORKFLOW_VCPKG_DIR" || cd "$WORKFLOW_VCPKG_DIR"
-        CONFIGURATION=$( \
-          find vcpkg.json vcpkg-configuration.json overlay-ports overlay-triplets -type f -exec sha1sum '{}' ';' | \
+        CONFIGURATION=$(
+          find vcpkg.json vcpkg-configuration.json overlay-ports overlay-triplets -type f -exec sha1sum '{}' ';' |
           sed -e '/overlay-triplets[/]/ {' -e "/[/]$HOST_TRIPLET[.]cmake/ p" -e "/[/]$TARGET_TRIPLET[.]cmake/ p" -e 'd' -e '}' |
-          sort -u)
+          sort -u )
         echo "$CONFIGURATION"
-        echo "$CONFIGURATION" |
-          sha1sum | \
-          (read HASH FILE; echo hash=$HASH; echo key="${HOST_TRIPLET}_${TARGET_TRIPLET}_${HASH}") | \
-          tee -a "$GITHUB_OUTPUT"
+        HASH=$( echo "$CONFIGURATION" | sha1sum | ( read HASH FILE; echo "$HASH" ) )
 
         case "$TARGET_TRIPLET" in
         *-android*)
@@ -88,11 +83,16 @@ runs:
           TOOLCHAIN_FILE="unknown-vcpkg-toolchain-file"
           ;;
         esac
-        echo "TOOLCHAIN_FILE=${TOOLCHAIN_FILE}" | tee -a "$GITHUB_OUTPUT"
+
+        cat < : tee -a "$GITHUB_OUTPUT"
+          hash=${HASH}
+          key=${HOST_TRIPLET}_${TARGET_TRIPLET}_${HASH}
+          toolchain_file=${TOOLCHAIN_FILE}
+        :
 
     - name: Restore vcpkg export
       id: restore-export
-      if: steps.workflow-configuration.outputs.WORKFLOW_LABEL != 'vcpkg' || inputs.restore_export
+      if: steps.workflow-configuration.outputs.label != 'vcpkg' || inputs.restore_export
       uses: actions/cache/restore@v5
       with:
         path: ${{ github.workspace }}/vcpkg-export
@@ -100,11 +100,11 @@ runs:
 
     - name: Restore vcpkg assets
       id: restore-assets
-      if: steps.workflow-configuration.outputs.WORKFLOW_LABEL == 'vcpkg'
+      if: steps.workflow-configuration.outputs.label == 'vcpkg'
       uses: actions/cache/restore@v5
       with:
         path: cache/downloads
-        key: vcpkg-assets_${{ steps.vcpkg-configuration.outputs.key }}_complete
+        key: vcpkg-assets_${{ steps.vcpkg-configuration.outputs.key }}_success
         restore-keys: |
           vcpkg-assets_${{ steps.vcpkg-configuration.outputs.key }}_
           vcpkg-assets_${{ inputs.host_triplet }}_${{ inputs.target_triplet }}_
@@ -127,6 +127,7 @@ runs:
       if: steps.restore-export.outputs.cache-hit != 'true'
       shell: bash
       run: |
+        set -e
         case "$RUNNER_OS" in
         macOS)
           brew install \
@@ -172,16 +173,22 @@ runs:
       env:
         HOST_TRIPLET: ${{ inputs.host_triplet }}
         TARGET_TRIPLET: ${{ inputs.target_triplet }}
+        VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/cache/artifacts
+        VCPKG_DOWNLOADS: ${{ github.workspace }}/cache/downloads
+        WORKFLOW_VCPKG_DIR: ${{ steps.workflow-configuration.outputs.vcpkg_dir }}
       run: |
+        set -e
+        mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
+        mkdir -p "$VCPKG_DOWNLOADS"
         test -z "$WORKFLOW_VCPKG_DIR" || cd "$WORKFLOW_VCPKG_DIR"
-        vcpkg install --host-triplet="$HOST_TRIPLET" --triplet="$TARGET_TRIPLET" --only-downloads --no-binarycaching --x-install-root='${{ github.workspace }}/only_downloads' &&
-        vcpkg install --host-triplet="$HOST_TRIPLET" --triplet="$TARGET_TRIPLET" --x-install-root='${{ github.workspace }}/vcpkg_installed' &&
-        echo 'result=complete' >> "$GITHUB_OUTPUT"
+        vcpkg install --host-triplet="$HOST_TRIPLET" --triplet="$TARGET_TRIPLET" --only-downloads --no-binarycaching --x-install-root="$GITHUB_WORKSPACE/only_downloads"
+        vcpkg install --host-triplet="$HOST_TRIPLET" --triplet="$TARGET_TRIPLET" --x-install-root="$GITHUB_WORKSPACE/vcpkg_installed"
 
     - name: Cleanup
       if: steps.restore-export.outputs.cache-hit != 'true' && always()
       shell: bash
       run: |
+        set -e
         rm -Rf cache/downloads/tools
 
     - name: Save vcpkg assets
@@ -189,7 +196,7 @@ runs:
       uses: actions/cache/save@v5
       with:
         path: cache/downloads
-        key: vcpkg-assets_${{ steps.vcpkg-configuration.outputs.key }}_${{ steps.vcpkg-install.outputs.result }}
+        key: vcpkg-assets_${{ steps.vcpkg-configuration.outputs.key }}_${{ steps.vcpkg-install.outcome }}
         enableCrossOsArchive: true
 
     - name: Save vcpkg artifacts
@@ -200,17 +207,18 @@ runs:
         key: vcpkg-cache_${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
 
     - name: vcpkg export
-      if: steps.vcpkg-install.outputs.result == 'complete'
       shell: bash
+      env:
+        WORKFLOW_VCPKG_DIR: ${{ steps.workflow-configuration.outputs.vcpkg_dir }}
       run: |
+        set -e
         test -z "$WORKFLOW_VCPKG_DIR" || cd "$WORKFLOW_VCPKG_DIR"
-        vcpkg export --raw --output-dir=$GITHUB_WORKSPACE --x-install-root=$GITHUB_WORKSPACE/vcpkg_installed
+        vcpkg export --raw --output-dir="$GITHUB_WORKSPACE" --x-install-root="$GITHUB_WORKSPACE/vcpkg_installed"
         cd "$GITHUB_WORKSPACE"
         mv vcpkg-export-* vcpkg-export
         cp -a $(cd "$VCPKG_INSTALLATION_ROOT"; pwd)/scripts/toolchains vcpkg-export/scripts
 
     - name: Save vcpkg export
-      if: steps.vcpkg-install.outputs.result == 'complete'
       uses: actions/cache/save@v5
       with:
         path: ${{ github.workspace }}/vcpkg-export
