@@ -1,10 +1,10 @@
 name: Build Mapper with vcpkg
 description: "Builds and test Mapper"
 inputs:
-  target-triplet:
+  target_triplet:
     required: true
     type: string
-  host-triplet:
+  host_triplet:
     required: true
     type: string
   restore_export:
@@ -17,10 +17,10 @@ inputs:
     description: A label controlling workflow behavior
     required: true
     type: string
-  toolchain-file:
+  toolchain_file:
     required: true
     type: string
-  cmake-args:
+  cmake_args:
     type: string
     default: ""
 outputs:
@@ -38,8 +38,8 @@ runs:
       if: ${{ inputs.label == '' }}
       uses: $/.github/actions/install-vcpkg
       with:
-        target-triplet: ${{ inputs.target-triplet }}
-        host-triplet: ${{ inputs.host-triplet }}
+        target_triplet: ${{ inputs.target_triplet }}
+        host_triplet: ${{ inputs.host_triplet }}
         restore_export: ${{ inputs.restore_export }}
 
     - name: Build system setup
@@ -49,7 +49,7 @@ runs:
         cat << : | tee -a "$GITHUB_OUTPUT"
         label=${{ inputs.label }}${{ steps.setup-vcpkg.outputs.label }}
         key=${{ inputs.key }}${{ steps.setup-vcpkg.outputs.key }}
-        toolchain-file=${{ inputs.toolchain-file }}${{ steps.setup-vcpkg.outputs.toolchain-file }}
+        toolchain_file=${{ inputs.toolchain_file }}${{ steps.setup-vcpkg.outputs.toolchain_file }}
         :
         case "$RUNNER_OS" in
         macOS)
@@ -69,12 +69,12 @@ runs:
         Windows)
           choco install --no-progress nsis
           echo 'C:\Program Files (x86)\NSIS' >> "$GITHUB_PATH"
-          case "${{ inputs.host-triplet }},${{ inputs.target-triplet }}" in
+          case "${{ inputs.host_triplet }},${{ inputs.target_triplet }}" in
           x64-*,x64-*)
             echo 'CALL_VCVARSALL=call "C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" ' x64 >> "$GITHUB_ENV"
             ;;
           *)
-            echo "Unsupported triplet combination: ${{ inputs.host-triplet }},${{ inputs.target-triplet }}"
+            echo "Unsupported triplet combination: ${{ inputs.host_triplet }},${{ inputs.target_triplet }}"
             exit 1
             ;;
           esac
@@ -83,7 +83,7 @@ runs:
 
     - name: Restore gradle cache
       id: restore-gradle
-      if: contains(inputs.target-triplet, 'android')
+      if: contains(inputs.target_triplet, 'android')
       uses: actions/cache/restore@v5
       with:
         path: |
@@ -104,37 +104,34 @@ runs:
     - name: Configure Mapper
       shell: bash
       env:
-        CMAKE_ARGS: ${{ inputs.cmake-args }}
-        HOST_TRIPLET: ${{ inputs.host-triplet }}
-        TARGET_TRIPLET: ${{ inputs.target-triplet }}
         WORKFLOW_MAPPER_DIR: ${{ case(steps.setup.outputs.label == 'vcpkg', 'Mapper', '.') }}
       run: |
         mkdir build
-        ${{ case(contains(inputs.target-triplet, 'windows'), 'cat << : | cmd /D /E:ON /V:OFF /K echo off', '') }}
-        ${{ case(contains(inputs.target-triplet, 'windows'), '$CALL_VCVARSALL', '') }}
+        ${{ case(contains(inputs.target_triplet, 'windows'), 'cat << : | cmd /D /E:ON /V:OFF /K echo off', '') }}
+        ${{ case(contains(inputs.target_triplet, 'windows'), '$CALL_VCVARSALL', '') }}
         cmake -S "${WORKFLOW_MAPPER_DIR}" -B build \
           -G Ninja \
           -DCMAKE_TOOLCHAIN_FILE=$GITHUB_WORKSPACE/vcpkg-export/scripts/buildsystems/vcpkg.cmake \
-          -DCMAKE_CROSSCOMPILING=${{ case(inputs.target-triplet != inputs.host-triplet, 'ON', 'OFF') }} \
+          -DCMAKE_CROSSCOMPILING=${{ case(inputs.target_triplet != inputs.host_triplet, 'ON', 'OFF') }} \
           -DCMAKE_BUILD_TYPE=RelWithDebInfo \
           -DCMAKE_POLICY_DEFAULT_CMP0176=NEW \
           -DCMAKE_POLICY_DEFAULT_CMP0177=NEW \
           -DCMAKE_SUPPRESS_REGENERATION=ON \
-          -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${{ steps.setup.outputs.toolchain-file }} \
-          -DVCPKG_TARGET_TRIPLET=$TARGET_TRIPLET \
-          -DVCPKG_HOST_TRIPLET=$HOST_TRIPLET \
+          -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${{ steps.setup.outputs.toolchain_file }} \
+          -DVCPKG_INPUT_TARGET_TRIPLET=$INPUT_TARGET_TRIPLET \
+          -DVCPKG_INPUT_HOST_TRIPLET=$INPUT_HOST_TRIPLET \
           -DVCPKG_MANIFEST_MODE=OFF \
           -DLICENSING_PROVIDER=vcpkg \
-          ${{ case(contains(inputs.target-triplet, 'android'), '-DANDROID_DEPLOY_QT=$GITHUB_WORKSPACE/vcpkg-export/installed/$TARGET_TRIPLET/tools/qt5/bin/androiddeployqt', '') }} \
-          $CMAKE_ARGS \
+          ${{ case(contains(inputs.target_triplet, 'android'), '-DANDROID_DEPLOY_QT=$GITHUB_WORKSPACE/vcpkg-export/installed/$INPUT_TARGET_TRIPLET/tools/qt5/bin/androiddeployqt', '') }} \
+          $INPUT_CMAKE_ARGS \
           || exit 1
         :
 
     - name: Build Mapper
       shell: bash
       run: |
-        ${{ case(contains(inputs.target-triplet, 'windows'), 'cat << : | cmd /D /E:ON /V:OFF /K echo off', '') }}
-        ${{ case(contains(inputs.target-triplet, 'windows'), '$CALL_VCVARSALL', '') }}
+        ${{ case(contains(inputs.target_triplet, 'windows'), 'cat << : | cmd /D /E:ON /V:OFF /K echo off', '') }}
+        ${{ case(contains(inputs.target_triplet, 'windows'), '$CALL_VCVARSALL', '') }}
         cmake --build build \
           || exit 1
         :
@@ -143,20 +140,19 @@ runs:
       shell: bash
       env:
         CTEST_OUTPUT_ON_FAILURE: 1
-        DYLD_LIBRARY_PATH: ${{ github.workspace }}/vcpkg-export/installed/${{ inputs.target-triplet }}/lib
-        LD_LIBRARY_PATH: ${{ github.workspace }}/vcpkg-export/installed/${{ inputs.target-triplet }}/lib
-        GDAL_DATA: ${{ github.workspace }}/vcpkg-export/installed/${{ inputs.target-triplet }}/share/gdal
-        PROJ_DATA: ${{ github.workspace }}/vcpkg-export/installed/${{ inputs.target-triplet }}/share/proj
-        TARGET_TRIPLET: ${{ inputs.target-triplet }}
+        DYLD_LIBRARY_PATH: ${{ github.workspace }}/vcpkg-export/installed/${{ inputs.target_triplet }}/lib
+        LD_LIBRARY_PATH: ${{ github.workspace }}/vcpkg-export/installed/${{ inputs.target_triplet }}/lib
+        GDAL_DATA: ${{ github.workspace }}/vcpkg-export/installed/${{ inputs.target_triplet }}/share/gdal
+        PROJ_DATA: ${{ github.workspace }}/vcpkg-export/installed/${{ inputs.target_triplet }}/share/proj
         SKIP_POWERSHELL_POSITION_SOURCE_LIVE_TEST: 1
         # Needs Qt 6.5
         QT_WIN_DEBUG_CONSOLE: attach
       run: |
-        ${{ case(contains(inputs.target-triplet, 'windows'), 'cat << : | cmd /D /E:ON /V:OFF /K echo off', '') }}
-        ${{ case(contains(inputs.target-triplet, 'windows'), 'set PATH=%GITHUB_WORKSPACE%\vcpkg-export\installed\%TARGET_TRIPLET%\bin;%PATH%', '') }}
-        ${{ case(contains(inputs.target-triplet, 'windows'), 'set QT_PLUGIN_PATH=%GITHUB_WORKSPACE%\vcpkg-export\installed\%TARGET_TRIPLET%\plugins', '') }}
-        ${{ case(contains(inputs.target-triplet, 'windows'), '$CALL_VCVARSALL', '') }}
-        ${{ case(contains(inputs.target-triplet, 'windows'), 'mkdir build\test\lib\fonts', '') }}
+        ${{ case(contains(inputs.target_triplet, 'windows'), 'cat << : | cmd /D /E:ON /V:OFF /K echo off', '') }}
+        ${{ case(contains(inputs.target_triplet, 'windows'), 'set PATH=%GITHUB_WORKSPACE%\vcpkg-export\installed\%INPUT_TARGET_TRIPLET%\bin;%PATH%', '') }}
+        ${{ case(contains(inputs.target_triplet, 'windows'), 'set QT_PLUGIN_PATH=%GITHUB_WORKSPACE%\vcpkg-export\installed\%INPUT_TARGET_TRIPLET%\plugins', '') }}
+        ${{ case(contains(inputs.target_triplet, 'windows'), '$CALL_VCVARSALL', '') }}
+        ${{ case(contains(inputs.target_triplet, 'windows'), 'mkdir build\test\lib\fonts', '') }}
         ctest --test-dir build --output-on-failure --timeout 60 \
           || exit 1
         :
@@ -165,8 +161,8 @@ runs:
     - name: Build Mapper package
       shell: bash
       run: |
-        ${{ case(contains(inputs.target-triplet, 'windows'), 'cat << : | cmd /D /E:ON /V:OFF /K echo off', '') }}
-        ${{ case(contains(inputs.target-triplet, 'windows'), '$CALL_VCVARSALL', '') }}
+        ${{ case(contains(inputs.target_triplet, 'windows'), 'cat << : | cmd /D /E:ON /V:OFF /K echo off', '') }}
+        ${{ case(contains(inputs.target_triplet, 'windows'), '$CALL_VCVARSALL', '') }}
         cmake --build build --target package \
           || exit 1
         :
@@ -188,7 +184,7 @@ runs:
         echo "label=${{ steps.setup.outputs.label }}" | tee -a "$GITHUB_OUTPUT"
 
     - name: Save gradle cache
-      if: contains(inputs.target-triplet, 'android') && steps.restore-gradle.outputs.cache-matched-key == ''
+      if: contains(inputs.target_triplet, 'android') && steps.restore-gradle.outputs.cache-matched-key == ''
       uses: actions/cache/save@v5
       with:
         path: |
