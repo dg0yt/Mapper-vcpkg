@@ -53,14 +53,14 @@ runs:
         TARGET_TRIPLET: ${{ inputs.target_triplet }}
       run: |
         set -e
-        test -n "${LABEL}"
-        cat << : | tee -a "$GITHUB_OUTPUT"
+        test -n "${LABEL}" # or fail early
+        cat << : | tee -a "${GITHUB_OUTPUT}"
         label=${LABEL}
         key=${KEY}
         toolchain_file=${TOOLCHAIN_FILE}
         package=mapper-package_${KEY}_${{ github.run_id }}
         :
-        case "$RUNNER_OS" in
+        case "${RUNNER_OS}" in
         macOS)
           brew install doxygen
           brew --prefix
@@ -77,13 +77,13 @@ runs:
           ;;
         Windows)
           choco install --no-progress nsis
-          echo 'C:\Program Files (x86)\NSIS' >> "$GITHUB_PATH"
-          case "$HOST_TRIPLET,$TARGET_TRIPLET" in
+          echo 'C:\Program Files (x86)\NSIS' >> "${GITHUB_PATH}"
+          case "${HOST_TRIPLET},${TARGET_TRIPLET}" in
           x64-*,x64-*)
             echo 'CALL_VCVARSALL=call "C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" ' x64 >> "$GITHUB_ENV"
             ;;
           *)
-            echo "Unsupported triplet combination: $HOST_TRIPLET,$TARGET_TRIPLET"
+            echo "Unsupported triplet combination: ${HOST_TRIPLET},${TARGET_TRIPLET}"
             exit 1
             ;;
           esac
@@ -122,21 +122,21 @@ runs:
         set -e
         mkdir build
         ${{ case(contains(inputs.target_triplet, 'windows'), 'cat << : | cmd /D /E:ON /V:OFF /K echo off', '') }}
-        ${{ case(contains(inputs.target_triplet, 'windows'), '$CALL_VCVARSALL', '') }}
+        ${{ case(contains(inputs.target_triplet, 'windows'), '${CALL_VCVARSALL}', '') }}
         cmake -S "${WORKFLOW_MAPPER_DIR}" -B build \
           -G Ninja \
-          -DCMAKE_TOOLCHAIN_FILE=$GITHUB_WORKSPACE/vcpkg-export/scripts/buildsystems/vcpkg.cmake \
+          -DCMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/vcpkg-export/scripts/buildsystems/vcpkg.cmake \
           -DCMAKE_CROSSCOMPILING=${{ case(inputs.target_triplet != inputs.host_triplet, 'ON', 'OFF') }} \
           -DCMAKE_BUILD_TYPE=RelWithDebInfo \
           -DCMAKE_POLICY_DEFAULT_CMP0176=NEW \
           -DCMAKE_POLICY_DEFAULT_CMP0177=NEW \
           -DCMAKE_SUPPRESS_REGENERATION=ON \
           -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$CHAINLOAD_TOOLCHAIN_FILE \
-          -DVCPKG_TARGET_TRIPLET=$TARGET_TRIPLET \
-          -DVCPKG_HOST_TRIPLET=$HOST_TRIPLET \
+          -DVCPKG_TARGET_TRIPLET=${TARGET_TRIPLET} \
+          -DVCPKG_HOST_TRIPLET=${HOST_TRIPLET} \
           -DVCPKG_MANIFEST_MODE=OFF \
           -DLICENSING_PROVIDER=vcpkg \
-          ${{ case(contains(inputs.target_triplet, 'android'), '-DANDROID_DEPLOY_QT=$GITHUB_WORKSPACE/vcpkg-export/installed/$TARGET_TRIPLET/tools/qt5/bin/androiddeployqt', '') }} \
+          ${{ case(contains(inputs.target_triplet, 'android'), '-DANDROID_DEPLOY_QT=${GITHUB_WORKSPACE}/vcpkg-export/installed/${TARGET_TRIPLET}/tools/qt5/bin/androiddeployqt', '') }} \
           $CMAKE_ARGS \
           || exit 1
         :
@@ -146,7 +146,7 @@ runs:
       run: |
         set -e
         ${{ case(contains(inputs.target_triplet, 'windows'), 'cat << : | cmd /D /E:ON /V:OFF /K echo off', '') }}
-        ${{ case(contains(inputs.target_triplet, 'windows'), '$CALL_VCVARSALL', '') }}
+        ${{ case(contains(inputs.target_triplet, 'windows'), '${CALL_VCVARSALL}', '') }}
         cmake --build build
         :
 
@@ -167,7 +167,7 @@ runs:
         ${{ case(contains(inputs.target_triplet, 'windows'), 'cat << : | cmd /D /E:ON /V:OFF /K echo off', '') }}
         ${{ case(contains(inputs.target_triplet, 'windows'), 'set PATH=%GITHUB_WORKSPACE%\vcpkg-export\installed\%TARGET_TRIPLET%\bin;%PATH%', '') }}
         ${{ case(contains(inputs.target_triplet, 'windows'), 'set QT_PLUGIN_PATH=%GITHUB_WORKSPACE%\vcpkg-export\installed\%TARGET_TRIPLET%\plugins', '') }}
-        ${{ case(contains(inputs.target_triplet, 'windows'), '$CALL_VCVARSALL', '') }}
+        ${{ case(contains(inputs.target_triplet, 'windows'), '${CALL_VCVARSALL}', '') }}
         ${{ case(contains(inputs.target_triplet, 'windows'), 'mkdir build\test\lib\fonts', '') }}
         ctest --test-dir build --output-on-failure --timeout 60
         :
@@ -178,7 +178,7 @@ runs:
       run: |
         set -e
         ${{ case(contains(inputs.target_triplet, 'windows'), 'cat << : | cmd /D /E:ON /V:OFF /K echo off', '') }}
-        ${{ case(contains(inputs.target_triplet, 'windows'), '$CALL_VCVARSALL', '') }}
+        ${{ case(contains(inputs.target_triplet, 'windows'), '${CALL_VCVARSALL}', '') }}
         cmake --build build --target package
         :
 
