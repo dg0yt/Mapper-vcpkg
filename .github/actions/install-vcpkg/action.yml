@@ -58,6 +58,7 @@ runs:
         WORKFLOW_VCPKG_DIR: ${{ steps.workflow-configuration.outputs.vcpkg_dir }}
       run: |
         set -e
+        test -z '${{ steps.workflow-configuration.outputs.label }}' || exit 1
         test -z "$WORKFLOW_VCPKG_DIR" || cd "$WORKFLOW_VCPKG_DIR"
         CONFIGURATION=$(
           find vcpkg.json vcpkg-configuration.json overlay-ports overlay-triplets -type f -exec sha1sum '{}' ';' |
