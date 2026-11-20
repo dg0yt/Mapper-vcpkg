@@ -53,10 +53,11 @@ runs:
         TARGET_TRIPLET: ${{ inputs.target_triplet }}
       run: |
         set -e
+        test -n "${LABEL}"
         cat << : | tee -a "$GITHUB_OUTPUT"
-        label=$LABEL
-        key=$KEY
-        toolchain_file=$TOOLCHAIN_FILE
+        label=${LABEL}
+        key=${KEY}
+        toolchain_file=${TOOLCHAIN_FILE}
         package=mapper-package_${KEY}_${{ github.run_id }}
         :
         case "$RUNNER_OS" in
