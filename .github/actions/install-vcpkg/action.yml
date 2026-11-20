@@ -36,7 +36,7 @@ runs:
           LABEL=mapper
           VCPKG_DIR=Mapper-vcpkg
         fi
-        cat : | tee -a "$GITHUB_OUTPUT"
+        cat << : | tee -a "$GITHUB_OUTPUT"
           label=$LABEL
           vcpkg_dir=$VCPKG_DIR
         :
