@@ -208,6 +208,7 @@ runs:
         key: vcpkg-cache_${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
 
     - name: vcpkg export
+      if: ${{ steps.restore-export.outputs.cache-hit != 'true' }}
       shell: bash
       env:
         WORKFLOW_VCPKG_DIR: ${{ steps.workflow-configuration.outputs.vcpkg_dir }}
@@ -220,6 +221,7 @@ runs:
         cp -a $(cd "$VCPKG_INSTALLATION_ROOT"; pwd)/scripts/toolchains vcpkg-export/scripts
 
     - name: Save vcpkg export
+      if: ${{ steps.restore-export.outputs.cache-hit != 'true' }}
       uses: actions/cache/save@v5
       with:
         path: ${{ github.workspace }}/vcpkg-export
