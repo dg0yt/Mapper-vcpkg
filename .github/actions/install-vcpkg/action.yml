@@ -84,7 +84,7 @@ runs:
           ;;
         esac
 
-        cat < : tee -a "$GITHUB_OUTPUT"
+        cat << : tee -a "$GITHUB_OUTPUT"
           hash=${HASH}
           key=${HOST_TRIPLET}_${TARGET_TRIPLET}_${HASH}
           toolchain_file=${TOOLCHAIN_FILE}
