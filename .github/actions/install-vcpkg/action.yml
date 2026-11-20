@@ -170,7 +170,7 @@ runs:
       if: steps.restore-export.outputs.cache-hit != 'true'
       shell: bash
       env:
-        HOST_TRIPLET: ${{ inputs.host-triplet }}
+        HOST_TRIPLET: ${{ inputs.host_triplet }}
         TARGET_TRIPLET: ${{ inputs.target_triplet }}
       run: |
         test -z "$WORKFLOW_VCPKG_DIR" || cd "$WORKFLOW_VCPKG_DIR"
