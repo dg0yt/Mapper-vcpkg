@@ -6,3 +6,8 @@ rules:
         softprops/*: ref-pin
         OpenOrienteering/Mapper-vcpkg/.github/workflows/vcpkg.yml: any
         dg0yt/Mapper-vcpkg/.github/workflows/vcpkg.yml: any
+  unsound-contains:
+    ignore:
+      # "contains" for target string pattern matching
+      # TODO: Lists as input
+      - ci.yml

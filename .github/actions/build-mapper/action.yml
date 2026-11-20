@@ -17,7 +17,7 @@ inputs:
     description: A label controlling workflow behavior
     required: true
     type: string
-  toolchain-file:
+  toolchain_file:
     required: true
     type: string
   cmake-args:
@@ -45,11 +45,17 @@ runs:
     - name: Build system setup
       id: setup
       shell: bash
+      env:
+        INPUT_LABEL: ${{ inputs.label }}
+        INPUT_KEY: ${{ inputs.key }}
+        INPUT_TOOLCHAIN_FILE: ${{ inputs.toolchain_file }}
+        HOST_TRIPLET: ${{ inputs.host_triplet }}
+        TARGET_TRIPLET: ${{ inputs.target_triplet }}
       run: |
         cat << : | tee -a "$GITHUB_OUTPUT"
-        label=${{ inputs.label }}${{ steps.setup-vcpkg.outputs.label }}
-        key=${{ inputs.key }}${{ steps.setup-vcpkg.outputs.key }}
-        toolchain-file=${{ inputs.toolchain-file }}${{ steps.setup-vcpkg.outputs.toolchain-file }}
+        label=$INPUT_LABEL${{ steps.setup-vcpkg.outputs.label }}
+        key=$INPUT_KEY${{ steps.setup-vcpkg.outputs.key }}
+        toolchain_file=$INPUT_TOOLCHAIN_FILE${{ steps.setup-vcpkg.outputs.toolchain_file }}
         :
         case "$RUNNER_OS" in
         macOS)
@@ -69,12 +75,12 @@ runs:
         Windows)
           choco install --no-progress nsis
           echo 'C:\Program Files (x86)\NSIS' >> "$GITHUB_PATH"
-          case "${{ inputs.host_triplet }},${{ inputs.target_triplet }}" in
+          case "$HOST_TRIPLET,$TARGET_TRIPLET" in
           x64-*,x64-*)
             echo 'CALL_VCVARSALL=call "C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" ' x64 >> "$GITHUB_ENV"
             ;;
           *)
-            echo "Unsupported triplet combination: ${{ inputs.host_triplet }},${{ inputs.target_triplet }}"
+            echo "Unsupported triplet combination: $HOST_TRIPLET,$TARGET_TRIPLET"
             exit 1
             ;;
           esac
@@ -120,7 +126,7 @@ runs:
           -DCMAKE_POLICY_DEFAULT_CMP0176=NEW \
           -DCMAKE_POLICY_DEFAULT_CMP0177=NEW \
           -DCMAKE_SUPPRESS_REGENERATION=ON \
-          -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${{ steps.setup.outputs.toolchain-file }} \
+          -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${{ steps.setup.outputs.toolchain_file }} \
           -DVCPKG_TARGET_TRIPLET=$TARGET_TRIPLET \
           -DVCPKG_HOST_TRIPLET=$HOST_TRIPLET \
           -DVCPKG_MANIFEST_MODE=OFF \

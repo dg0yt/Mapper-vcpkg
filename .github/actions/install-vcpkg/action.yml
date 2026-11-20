@@ -37,9 +37,9 @@ runs:
         fi |
           tee -a "$GITHUB_ENV" |
           tee -a "$GITHUB_OUTPUT"
-        echo "VCPKG_DEFAULT_BINARY_CACHE=${{ github.workspace }}/cache/artifacts" |
+        echo "VCPKG_DEFAULT_BINARY_CACHE=$GITHUB_WORKSPACE/cache/artifacts" |
           tee -a "$GITHUB_ENV"
-        echo "VCPKG_DOWNLOADS=${{ github.workspace }}/cache/downloads" |
+        echo "VCPKG_DOWNLOADS=$GITHUB_WORKSPACE/cache/downloads" |
           tee -a "$GITHUB_ENV"
 
     - name: git checkout Mapper-vcpkg
