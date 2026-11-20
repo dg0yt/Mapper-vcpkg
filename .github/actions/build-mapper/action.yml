@@ -33,7 +33,7 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: vcpkg setup
+    - name: Setup vcpkg
       id: setup-vcpkg
       if: ${{ inputs.label == '' }}
       uses: $/.github/actions/install-vcpkg
@@ -53,9 +53,9 @@ runs:
         TARGET_TRIPLET: ${{ inputs.target_triplet }}
       run: |
         cat << : | tee -a "$GITHUB_OUTPUT"
-        label=${{ case(steps.vcpkg-setup.outcome == 'success', steps.setup-vcpkg.outputs.label, '$INPUT_LABEL') }}
-        key=${{ case(steps.vcpkg-setup.outcome == 'success', steps.setup-vcpkg.outputs.key, '$INPUT_KEY') }}
-        toolchain_file=${{ case(steps.vcpkg-setup.outcome == 'success', steps.setup-vcpkg.outputs.toolchain_file, '$INPUT_TOOLCHAIN_FILE') }}
+        label=${{ case(inputs.label == '', steps.setup-vcpkg.outputs.label, '$INPUT_LABEL') }}
+        key=${{ case(inputs.label == '', steps.setup-vcpkg.outputs.key, '$INPUT_KEY') }}
+        toolchain_file=${{ case(inputs.label == '', steps.setup-vcpkg.outputs.toolchain_file, '$INPUT_TOOLCHAIN_FILE') }}
         :
         case "$RUNNER_OS" in
         macOS)
