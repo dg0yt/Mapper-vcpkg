@@ -1,10 +1,10 @@
 name: Install dependencies with vcpkg
 description: "Installs the required dependencies"
 inputs:
-  target-triplet:
+  target_triplet:
     required: true
     type: string
-  host-triplet:
+  host_triplet:
     required: true
     type: string
   restore_export:
@@ -31,11 +31,9 @@ runs:
         then
           echo WORKFLOW_LABEL=vcpkg
           echo WORKFLOW_VCPKG_DIR=
-          echo WORKFLOW_MAPPER_DIR=Mapper
         else
           echo WORKFLOW_LABEL=mapper
           echo WORKFLOW_VCPKG_DIR=Mapper-vcpkg
-          echo WORKFLOW_MAPPER_DIR=
         fi |
           tee -a "$GITHUB_ENV" |
           tee -a "$GITHUB_OUTPUT"
@@ -55,6 +53,9 @@ runs:
     - name: Determine vcpkg configuration
       id: vcpkg-configuration
       shell: bash
+      env:
+        HOST_TRIPLET: ${{ inputs.host_triplet }}
+        TARGET_TRIPLET: ${{ inputs.target_triplet }}
       run: |
         mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
         mkdir -p "$VCPKG_DOWNLOADS"
@@ -106,8 +107,8 @@ runs:
         key: vcpkg-assets_${{ steps.vcpkg-configuration.outputs.key }}_complete
         restore-keys: |
           vcpkg-assets_${{ steps.vcpkg-configuration.outputs.key }}_
-          vcpkg-assets_${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_
-          vcpkg-assets_${{ inputs.host-triplet }}_
+          vcpkg-assets_${{ inputs.host_triplet }}_${{ inputs.target_triplet }}_
+          vcpkg-assets_${{ inputs.host_triplet }}_
           vcpkg-assets_
         enableCrossOsArchive: true
 
@@ -119,8 +120,8 @@ runs:
         key: vcpkg-cache_${{ steps.vcpkg-configuration.outputs.key }}_${{ github.run_id }}
         restore-keys: |
           vcpkg-cache_${{ steps.vcpkg-configuration.outputs.key }}_
-          vcpkg-cache_${{ inputs.host-triplet }}_${{ inputs.target-triplet }}_
-          vcpkg-cache_${{ inputs.host-triplet }}_
+          vcpkg-cache_${{ inputs.host_triplet }}_${{ inputs.target_triplet }}_
+          vcpkg-cache_${{ inputs.host_triplet }}_
 
     - name: Install transitive system dependencies
       if: steps.restore-export.outputs.cache-hit != 'true'
@@ -164,10 +165,13 @@ runs:
           ;;
         esac
 
-    - name: vcpkg install --triplet=${{ inputs.target-triplet }}
+    - name: vcpkg install --triplet=${{ inputs.target_triplet }}
       id: vcpkg-install
       if: steps.restore-export.outputs.cache-hit != 'true'
       shell: bash
+      env:
+        HOST_TRIPLET: ${{ inputs.host-triplet }}
+        TARGET_TRIPLET: ${{ inputs.target_triplet }}
       run: |
         test -z "$WORKFLOW_VCPKG_DIR" || cd "$WORKFLOW_VCPKG_DIR"
         vcpkg install --host-triplet="$HOST_TRIPLET" --triplet="$TARGET_TRIPLET" --only-downloads --no-binarycaching --x-install-root='${{ github.workspace }}/only_downloads' &&
