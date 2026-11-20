@@ -54,7 +54,7 @@ runs:
       shell: bash
       env:
         HOST_TRIPLET: ${{ inputs.host_triplet }}
-        ${TARGET_TRIPLET}: ${{ inputs.target_triplet }}
+        TARGET_TRIPLET: ${{ inputs.target_triplet }}
         WORKFLOW_VCPKG_DIR: ${{ steps.workflow-configuration.outputs.vcpkg_dir }}
         LABEL: ${{ steps.workflow-configuration.outputs.label }}
       run: |
@@ -174,7 +174,7 @@ runs:
       shell: bash
       env:
         HOST_TRIPLET: ${{ inputs.host_triplet }}
-        ${TARGET_TRIPLET}: ${{ inputs.target_triplet }}
+        TARGET_TRIPLET: ${{ inputs.target_triplet }}
         VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/cache/artifacts
         VCPKG_DOWNLOADS: ${{ github.workspace }}/cache/downloads
         WORKFLOW_VCPKG_DIR: ${{ steps.workflow-configuration.outputs.vcpkg_dir }}
