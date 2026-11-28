@@ -1,0 +1,12 @@
+name: CI (scheduled)
+
+on:
+  # Keep cache alive
+  schedule:
+    - cron: '10 21 * * 2,5'
+
+permissions: {}
+
+jobs:
+  ci:
+    uses: $/.github/workflows/ci.yml
